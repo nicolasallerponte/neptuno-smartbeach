@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="description" content="NEPTUNO - Plataforma de monitoreo costero para 12 playas de A Coruna, Galicia">
+    <meta name="theme-color" content="#FDFBF8">
+    <title>NEPTUNO — Coastal Intelligence</title>
+
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='6' fill='%230E6E8E'/><text y='24' x='6' font-size='20' font-family='serif' font-weight='bold' fill='white'>N</text></svg>">
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garant:ital,wght@0,400;0,600;0,700;1,400;1,600&family=Space+Mono:ital,wght@0,400;0,700;1,400&family=Outfit:wght@300;400;500;600&display=swap" rel="stylesheet">
+
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="">
+    <link rel="stylesheet" href="css/main.css">
+</head>
+<body>
+
+    <div id="loading-screen" class="loading-screen">
+        <div class="loading-content">
+            <div class="loading-mark">N</div>
+            <h1 class="loading-title">NEPTUNO</h1>
+            <p class="loading-subtitle">Coastal Intelligence Platform</p>
+            <div class="loading-bar"><div class="loading-fill"></div></div>
+            <p class="loading-status" id="loading-status">Connecting to FIWARE Orion...</p>
+        </div>
+    </div>
+
+    <nav id="navbar" aria-label="Main navigation">
+        <div class="nav-brand" id="nav-brand" role="button" tabindex="0" aria-label="Go to map view">
+            <span class="nav-monogram" aria-hidden="true">N</span>
+            <span class="nav-title">NEPTUNO</span>
+        </div>
+
+        <button class="nav-hamburger" id="nav-hamburger" aria-label="Toggle menu" aria-expanded="false">
+            <span></span><span></span><span></span>
+        </button>
+
+        <div class="nav-links" id="nav-links">
+            <a href="#globe" class="nav-link active" id="nav-globe" data-view="globe">Playas</a>
+            <a href="#chat" class="nav-link" id="nav-chat" data-view="chat">Asistente</a>
+            <a href="#alerts" class="nav-link" id="nav-alerts" data-view="alerts">
+                Alertas
+                <span class="alert-badge" id="alert-badge" style="display:none;" aria-live="polite">0</span>
+            </a>
+        </div>
+
+        <div class="nav-status" id="nav-status">
+            <span class="status-dot" id="status-dot"></span>
+            <span class="status-text" id="status-text">Conectando</span>
+        </div>
+    </nav>
+
+    <main id="app">
+
+        <!-- Vista Mapa Principal -->
+        <section id="view-globe" class="view active" aria-label="Coast map view">
+            <div class="globe-layout">
+                <div class="globe-container" id="globe-container">
+                    <div id="coast-map"></div>
+                <div class="globe-overlay" aria-hidden="true">
+                        <p class="globe-label">A Coruna · Galicia</p>
+                        <h1 class="globe-title">12 playas monitorizadas</h1>
+                    </div>
+                    <div class="globe-legend" id="globe-legend" aria-label="Leyenda">
+                        <div class="legend-item"><span class="legend-dot good"></span> Buenas condiciones</div>
+                        <div class="legend-item"><span class="legend-dot warning"></span> Moderado</div>
+                        <div class="legend-item"><span class="legend-dot danger"></span> Precaucion</div>
+                    </div>
+                    <p class="globe-hint" aria-hidden="true">Click en una playa para ver detalles</p>
+                </div>
+
+                <aside class="beach-sidebar" id="beach-sidebar" aria-label="Lista de playas">
+                    <div class="sidebar-header">
+                        <h2>Playas monitorizadas</h2>
+                        <span class="sidebar-count" id="sidebar-count">12</span>
+                    </div>
+                    <div class="sidebar-list" id="sidebar-list">
+                        <div class="sidebar-skeleton">
+                            <div class="skeleton skeleton-card"></div>
+                            <div class="skeleton skeleton-card"></div>
+                            <div class="skeleton skeleton-card"></div>
+                            <div class="skeleton skeleton-card"></div>
+                            <div class="skeleton skeleton-card"></div>
+                        </div>
+                    </div>
+                </aside>
+            </div>
+        </section>
+
+        <!-- Vista Detalle Playa -->
+        <section id="view-beach" class="view" aria-label="Detalle de playa">
+            <div class="beach-header" id="beach-header">
+                <button class="back-btn" id="back-btn" aria-label="Volver al mapa">
+                    ← Volver
+                </button>
+                <div class="beach-title-block">
+                    <h2 class="beach-name" id="beach-name">Cargando...</h2>
+                    <p class="beach-location" id="beach-location"></p>
+                </div>
+                <div class="beach-status-badge" id="beach-status-badge"></div>
+            </div>
+
+            <div class="beach-conditions" id="beach-conditions" role="list">
+                <div class="condition-card" id="card-temp" role="listitem">
+                    <div class="condition-label">Temperatura</div>
+                    <div class="condition-value" id="val-temp">--</div>
+                    <div class="condition-unit">°C</div>
+                </div>
+                <div class="condition-card" id="card-waves" role="listitem">
+                    <div class="condition-label">Altura olas</div>
+                    <div class="condition-value" id="val-waves">--</div>
+                    <div class="condition-unit">metros</div>
+                </div>
+                <div class="condition-card" id="card-wind" role="listitem">
+                    <div class="condition-label">Viento</div>
+                    <div class="condition-value" id="val-wind">--</div>
+                    <div class="condition-unit">km / h</div>
+                </div>
+                <div class="condition-card" id="card-water" role="listitem">
+                    <div class="condition-label">E. coli</div>
+                    <div class="condition-value" id="val-water">--</div>
+                    <div class="condition-unit">UFC / 100 ml</div>
+                </div>
+                <div class="condition-card" id="card-uv" role="listitem">
+                    <div class="condition-label">Indice UV</div>
+                    <div class="condition-value" id="val-uv">--</div>
+                    <div class="condition-unit">indice</div>
+                </div>
+                <div class="condition-card" id="card-occupation" role="listitem">
+                    <div class="condition-label">Ocupacion</div>
+                    <div class="condition-value" id="val-occupation">--</div>
+                    <div class="condition-unit">nivel</div>
+                </div>
+            </div>
+
+            <div class="beach-content">
+                <div class="map-panel">
+                    <div class="panel-header">
+                        <h3>Localizacion</h3>
+                        <div class="panel-actions">
+                            <span class="panel-badge" id="map-coords"></span>
+                            <a id="googlemaps-link" class="gmaps-btn" target="_blank" rel="noopener noreferrer" href="#">Ver en Google Maps</a>
+                        </div>
+                    </div>
+                    <div id="beach-map" class="beach-map" aria-label="Mapa de la playa"></div>
+                </div>
+
+                <div class="charts-grid">
+                    <div class="chart-card">
+                        <div class="panel-header">
+                            <h3>Temperatura del mar — 7 dias</h3>
+                            <span class="panel-unit">°C</span>
+                        </div>
+                        <canvas id="chart-temperature" aria-label="Grafica temperatura del mar"></canvas>
+                    </div>
+                    <div class="chart-card">
+                        <div class="panel-header">
+                            <h3>Altura de olas — 7 dias</h3>
+                            <span class="panel-unit">m</span>
+                        </div>
+                        <canvas id="chart-waves" aria-label="Grafica altura de olas"></canvas>
+                    </div>
+                    <div class="chart-card">
+                        <div class="panel-header">
+                            <h3>E. coli — Directiva UE 2006/7/EC</h3>
+                            <span class="panel-unit">UFC/100ml</span>
+                        </div>
+                        <canvas id="chart-ecoli" aria-label="Grafica calidad del agua E. coli"></canvas>
+                    </div>
+                    <div class="chart-card">
+                        <div class="panel-header">
+                            <h3>Prediccion de ocupacion — 48h</h3>
+                            <span class="panel-unit">%</span>
+                        </div>
+                        <canvas id="chart-occupation" aria-label="Grafica prediccion de ocupacion"></canvas>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Vista Chat -->
+        <section id="view-chat" class="view" aria-label="Asistente IA">
+            <div class="chat-container">
+                <div class="chat-header">
+                    <div class="chat-avatar-wrap" aria-hidden="true">N</div>
+                    <div class="chat-header-info">
+                        <h2>Asistente NEPTUNO</h2>
+                        <p class="chat-status" id="chat-status">Propulsado por Llama 3.1 · Datos en tiempo real de Orion</p>
+                    </div>
+                </div>
+
+                <div class="chat-messages" id="chat-messages" role="log" aria-live="polite">
+                    <div class="message bot">
+                        <div class="message-avatar" aria-hidden="true">N</div>
+                        <div class="message-content">
+                            Hola, soy el asistente costero NEPTUNO. Tengo acceso a datos en tiempo real de 12 playas de A Coruna — condiciones maritimas, calidad del agua, alertas y predicciones. Preguntame lo que necesites.
+                        </div>
+                    </div>
+                </div>
+
+                <div class="chat-suggestions" id="chat-suggestions">
+                    <button class="suggestion-chip" data-text="Cual es la mejor playa hoy para banarse?">Mejor playa hoy</button>
+                    <button class="suggestion-chip" data-text="Es seguro banarse en Riazor ahora?">Riazor ahora</button>
+                    <button class="suggestion-chip" data-text="Hay alertas activas en alguna playa?">Alertas activas</button>
+                </div>
+
+                <div class="chat-input-wrapper">
+                    <input type="text" id="chat-input" class="chat-input"
+                           placeholder="Pregunta sobre las condiciones..."
+                           autocomplete="off" aria-label="Mensaje" maxlength="2000">
+                    <button id="chat-send" class="chat-send-btn" aria-label="Enviar">
+                        <span aria-hidden="true">→</span>
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <!-- Vista Alertas -->
+        <section id="view-alerts" class="view" aria-label="Alertas activas">
+            <div class="alerts-container">
+                <div class="alerts-header">
+                    <div>
+                        <h2>Alertas Activas</h2>
+                        <p class="alerts-updated" id="alerts-updated">Actualizando cada 30 s</p>
+                    </div>
+                    <div class="alerts-source-legend">
+                        <span class="source-tag ml">ML Model</span>
+                        <span class="source-tag iot">IoT Sensor</span>
+                        <span class="source-tag cv">CV System</span>
+                    </div>
+                </div>
+                <div class="alerts-list" id="alerts-list">
+                    <div class="alerts-empty" id="alerts-empty">
+                        <div class="alerts-empty-icon" aria-hidden="true">&#10003;</div>
+                        <p>Sin alertas activas. Todas las playas en condiciones seguras.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <footer id="app-footer" class="app-footer" aria-label="Atribucion de datos">
+        <span>NEPTUNO v1.0 · UDC XDEI 2026</span>
+        <span class="footer-sep">·</span>
+        <span>MeteoGalicia · INTECMAR · Puertos del Estado</span>
+        <span class="footer-sep">·</span>
+        <span>FIWARE NGSI-LD · Orion Context Broker</span>
+    </footer>
+
+    <div id="toast-container" aria-live="assertive" aria-atomic="true"></div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-annotation@3.0.1/dist/chartjs-plugin-annotation.min.js"></script>
+
+    <script src="js/app.js"></script>
+    <script src="js/globe.js"></script>
+    <script src="js/map.js"></script>
+    <script src="js/charts.js"></script>
+    <script src="js/chat.js"></script>
+    <script src="js/alerts.js"></script>
+</body>
+</html>

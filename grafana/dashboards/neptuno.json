@@ -1,0 +1,285 @@
+{
+  "annotations": {
+    "list": []
+  },
+  "editable": true,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 1,
+  "id": null,
+  "links": [],
+  "panels": [
+    {
+      "title": "Sea Temperature Time Series",
+      "type": "timeseries",
+      "id": 1,
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 0 },
+      "datasource": { "type": "postgres", "uid": "${DS_CRATEDB}" },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "palette-classic" },
+          "custom": {
+            "axisBorderShow": false,
+            "axisLabel": "Temperature (C)",
+            "lineWidth": 2,
+            "fillOpacity": 10,
+            "gradientMode": "scheme",
+            "spanNulls": true,
+            "pointSize": 3
+          },
+          "unit": "celsius"
+        }
+      },
+      "options": {
+        "legend": { "displayMode": "table", "placement": "bottom" },
+        "tooltip": { "mode": "multi" }
+      },
+      "targets": [
+        {
+          "rawSql": "SELECT time_index AS \"time\", entity_id, seasurfacetemperature AS \"Sea Surface Temp\" FROM mtsmartbeach.etseaconditions WHERE $__timeFilter(time_index) ORDER BY time_index",
+          "format": "time_series",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "title": "Wave Height Time Series",
+      "type": "timeseries",
+      "id": 2,
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 0 },
+      "datasource": { "type": "postgres", "uid": "${DS_CRATEDB}" },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "palette-classic" },
+          "custom": {
+            "axisBorderShow": false,
+            "axisLabel": "Height (m)",
+            "lineWidth": 2,
+            "fillOpacity": 10,
+            "gradientMode": "scheme",
+            "spanNulls": true,
+            "pointSize": 3
+          },
+          "unit": "lengthm"
+        }
+      },
+      "options": {
+        "legend": { "displayMode": "table", "placement": "bottom" },
+        "tooltip": { "mode": "multi" }
+      },
+      "targets": [
+        {
+          "rawSql": "SELECT time_index AS \"time\", entity_id, waveheight AS \"Wave Height\" FROM mtsmartbeach.etseaconditions WHERE $__timeFilter(time_index) ORDER BY time_index",
+          "format": "time_series",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "title": "Water Quality State Timeline",
+      "type": "state-timeline",
+      "id": 3,
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 8 },
+      "datasource": { "type": "postgres", "uid": "${DS_CRATEDB}" },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "thresholds" },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "green", "value": 0 },
+              { "color": "yellow", "value": 200 },
+              { "color": "red", "value": 500 }
+            ]
+          },
+          "custom": {
+            "fillOpacity": 80,
+            "lineWidth": 0
+          },
+          "mappings": [
+            { "type": "range", "options": { "from": 0, "to": 199, "result": { "text": "Good", "color": "green" } } },
+            { "type": "range", "options": { "from": 200, "to": 499, "result": { "text": "Acceptable", "color": "yellow" } } },
+            { "type": "range", "options": { "from": 500, "to": 10000, "result": { "text": "Poor", "color": "red" } } }
+          ]
+        }
+      },
+      "options": {
+        "showValue": "auto",
+        "alignValue": "center",
+        "mergeValues": true,
+        "rowHeight": 0.9
+      },
+      "targets": [
+        {
+          "rawSql": "SELECT time_index AS \"time\", entity_id, escherichiacoli AS \"E.coli\" FROM mtsmartbeach.etwaterqualityobserved WHERE $__timeFilter(time_index) ORDER BY time_index",
+          "format": "time_series",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "title": "Beach Occupation Bar Gauge",
+      "type": "bargauge",
+      "id": 4,
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 8 },
+      "datasource": { "type": "postgres", "uid": "${DS_CRATEDB}" },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "green", "value": 0 },
+              { "color": "yellow", "value": 40 },
+              { "color": "orange", "value": 60 },
+              { "color": "red", "value": 80 }
+            ]
+          },
+          "min": 0,
+          "max": 100,
+          "unit": "percent"
+        }
+      },
+      "options": {
+        "orientation": "horizontal",
+        "displayMode": "gradient",
+        "valueMode": "text",
+        "showUnfilled": true,
+        "minVizWidth": 8,
+        "minVizHeight": 16
+      },
+      "targets": [
+        {
+          "rawSql": "SELECT entity_id AS \"Beach\", CASE WHEN occupationrate = 'low' THEN 20 WHEN occupationrate = 'medium' THEN 50 WHEN occupationrate = 'high' THEN 75 WHEN occupationrate = 'veryHigh' THEN 95 ELSE 10 END AS \"Occupation\" FROM mtsmartbeach.etbeach GROUP BY entity_id, occupationrate",
+          "format": "table",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "title": "Active Alerts Geomap",
+      "type": "geomap",
+      "id": 5,
+      "gridPos": { "h": 10, "w": 12, "x": 0, "y": 16 },
+      "datasource": { "type": "postgres", "uid": "${DS_CRATEDB}" },
+      "options": {
+        "view": {
+          "id": "coords",
+          "lat": 43.2,
+          "lon": -8.5,
+          "zoom": 8
+        },
+        "basemap": {
+          "type": "dark"
+        },
+        "layers": [
+          {
+            "type": "markers",
+            "config": {
+              "showLegend": true,
+              "symbol": {
+                "fixed": "img/icons/marker/circle.svg",
+                "mode": "fixed"
+              },
+              "size": {
+                "fixed": 10,
+                "min": 5,
+                "max": 20
+              },
+              "color": {
+                "field": "severity",
+                "fixed": "red"
+              }
+            },
+            "location": {
+              "mode": "coords",
+              "latitude": "latitude",
+              "longitude": "longitude"
+            }
+          }
+        ]
+      },
+      "targets": [
+        {
+          "rawSql": "SELECT a.time_index AS \"time\", a.entity_id, a.severity, a.category, b.latitude, b.longitude FROM mtsmartbeach.etweatheralert a LEFT JOIN (SELECT entity_id, (location[1])::double precision as longitude, (location[2])::double precision as latitude FROM mtsmartbeach.etbeach GROUP BY entity_id, location) b ON a.entity_id LIKE '%' || SPLIT_PART(b.entity_id, ':', 4) || '%' WHERE $__timeFilter(a.time_index) ORDER BY a.time_index DESC LIMIT 50",
+          "format": "table",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "title": "pH and E. coli History",
+      "type": "timeseries",
+      "id": 6,
+      "gridPos": { "h": 10, "w": 12, "x": 12, "y": 16 },
+      "datasource": { "type": "postgres", "uid": "${DS_CRATEDB}" },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "palette-classic" },
+          "custom": {
+            "axisBorderShow": false,
+            "lineWidth": 2,
+            "fillOpacity": 5,
+            "gradientMode": "none",
+            "spanNulls": true,
+            "pointSize": 3
+          }
+        },
+        "overrides": [
+          {
+            "matcher": { "id": "byName", "options": "pH" },
+            "properties": [
+              { "id": "custom.axisPlacement", "value": "left" },
+              { "id": "unit", "value": "none" },
+              { "id": "custom.axisLabel", "value": "pH" }
+            ]
+          },
+          {
+            "matcher": { "id": "byName", "options": "E.coli" },
+            "properties": [
+              { "id": "custom.axisPlacement", "value": "right" },
+              { "id": "unit", "value": "none" },
+              { "id": "custom.axisLabel", "value": "E.coli (UFC/100ml)" }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "legend": { "displayMode": "table", "placement": "bottom" },
+        "tooltip": { "mode": "multi" }
+      },
+      "targets": [
+        {
+          "rawSql": "SELECT time_index AS \"time\", ph AS \"pH\", escherichiacoli AS \"E.coli\" FROM mtsmartbeach.etwaterqualityobserved WHERE $__timeFilter(time_index) ORDER BY time_index",
+          "format": "time_series",
+          "refId": "A"
+        }
+      ]
+    }
+  ],
+  "schemaVersion": 39,
+  "tags": ["neptuno", "smartbeach", "fiware"],
+  "templating": {
+    "list": [
+      {
+        "current": {},
+        "hide": 2,
+        "name": "DS_CRATEDB",
+        "type": "datasource",
+        "query": "postgres"
+      }
+    ]
+  },
+  "time": {
+    "from": "now-7d",
+    "to": "now"
+  },
+  "timepicker": {},
+  "timezone": "Europe/Madrid",
+  "title": "NEPTUNO - Smart Beach Monitoring",
+  "uid": "neptuno-main",
+  "version": 1
+}

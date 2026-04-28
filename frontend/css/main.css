@@ -1,0 +1,564 @@
+/* ================================================================
+   NEPTUNO — Atlántico Profundo
+   Cormorant Garant · Space Mono · Outfit
+   ================================================================ */
+
+:root {
+    /* Identidad de marca */
+    --deep:       #0B3D59;
+    --deep-2:     #0E4F72;
+    --ocean:      #1B7FA6;
+    --ocean-dim:  rgba(27,127,166,0.10);
+
+    /* Fondos */
+    --parch:      #F7F3EC;
+    --paper:      #EFE9DF;
+    --white:      #FFFFFF;
+    --rule:       #E0D7CC;
+    --rule-2:     #D0C6B8;
+
+    /* Texto */
+    --ink:        #1A1A24;
+    --ink-2:      #4A5261;
+    --ink-3:      #8B95A3;
+    --ink-4:      #B0B8C3;
+
+    /* Estado */
+    --emerald:    #0D6B47;
+    --emerald-dim:rgba(13,107,71,0.09);
+    --amber:      #B45A0A;
+    --amber-dim:  rgba(180,90,10,0.09);
+    --crimson:    #B83025;
+    --crimson-dim:rgba(184,48,37,0.09);
+
+    /* Sombras */
+    --s1: 0 1px 3px rgba(26,26,36,.06);
+    --s2: 0 2px 10px rgba(26,26,36,.08);
+    --s3: 0 4px 20px rgba(26,26,36,.10);
+
+    /* Layout */
+    --nav-h:     62px;
+    --foot-h:    36px;
+    --side-w:    288px;
+    --r:         10px;
+    --r-s:       6px;
+}
+
+/* ===== Reset ===== */
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{
+    font-family:'Outfit',system-ui,sans-serif;
+    background:var(--parch);color:var(--ink);
+    min-height:100vh;display:flex;flex-direction:column;
+    overflow-x:hidden;-webkit-font-smoothing:antialiased;
+}
+::-webkit-scrollbar{width:5px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:var(--rule-2);border-radius:3px}
+
+/* ===== Loading ===== */
+.loading-screen{
+    position:fixed;inset:0;background:var(--deep);
+    display:flex;align-items:center;justify-content:center;z-index:1000;
+    transition:opacity .55s ease,visibility .55s ease;
+}
+.loading-screen.hidden{opacity:0;visibility:hidden;pointer-events:none}
+.loading-content{text-align:center}
+.loading-mark{
+    width:52px;height:52px;border-radius:var(--r-s);background:rgba(255,255,255,.1);
+    border:1px solid rgba(255,255,255,.18);display:flex;align-items:center;justify-content:center;
+    font-family:'Cormorant Garant',serif;font-size:1.75rem;font-style:italic;color:#fff;
+    margin:0 auto 22px;animation:floatMark 2.2s ease-in-out infinite;
+}
+.loading-title{
+    font-family:'Cormorant Garant',serif;font-size:2.4rem;font-weight:600;
+    letter-spacing:.15em;color:#fff;text-transform:uppercase;margin-bottom:6px;
+}
+.loading-subtitle{color:rgba(255,255,255,.4);font-size:.78rem;letter-spacing:.08em;text-transform:uppercase;margin-bottom:30px}
+.loading-bar{width:140px;height:1px;background:rgba(255,255,255,.15);margin:0 auto 14px;overflow:hidden}
+.loading-fill{height:100%;background:rgba(255,255,255,.6);animation:loadingBar 1.8s ease-in-out infinite}
+.loading-status{color:rgba(255,255,255,.28);font-size:.72rem;letter-spacing:.04em}
+@keyframes floatMark{0%,100%{transform:translateY(0)}50%{transform:translateY(-7px)}}
+@keyframes loadingBar{0%{transform:translateX(-100%)}100%{transform:translateX(400%)}}
+
+/* ===== Navbar ===== */
+#navbar{
+    position:fixed;top:0;left:0;right:0;height:var(--nav-h);
+    display:flex;align-items:center;gap:0;padding:0;
+    background:var(--deep);z-index:1000;
+}
+.nav-brand{
+    display:flex;align-items:center;gap:0;cursor:pointer;text-decoration:none;
+    flex-shrink:0;height:100%;padding:0 24px;
+    border-right:1px solid rgba(255,255,255,.1);
+}
+.nav-monogram{
+    width:32px;height:32px;border-radius:var(--r-s);
+    background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.18);
+    display:flex;align-items:center;justify-content:center;
+    font-family:'Cormorant Garant',serif;font-size:1.15rem;font-style:italic;
+    color:#fff;flex-shrink:0;transition:background .2s;margin-right:12px;
+}
+.nav-brand:hover .nav-monogram{background:rgba(255,255,255,.2)}
+.nav-title{
+    font-family:'Cormorant Garant',serif;font-size:.92rem;font-weight:600;
+    letter-spacing:.22em;color:rgba(255,255,255,.9);text-transform:uppercase;
+}
+.nav-links{display:flex;align-items:center;gap:0;margin-left:auto;height:100%}
+.nav-link{
+    display:flex;align-items:center;gap:0;padding:0 20px;height:100%;
+    text-decoration:none;color:rgba(255,255,255,.55);
+    font-size:.78rem;font-weight:500;letter-spacing:.06em;text-transform:uppercase;
+    transition:all .15s;white-space:nowrap;border-bottom:2px solid transparent;
+    position:relative;
+}
+.nav-link:hover{color:rgba(255,255,255,.85);background:rgba(255,255,255,.06)}
+.nav-link.active{color:#fff;border-bottom-color:rgba(255,255,255,.7)}
+.alert-badge{
+    display:inline-flex;align-items:center;justify-content:center;
+    min-width:17px;height:17px;padding:0 4px;background:var(--crimson);
+    color:#fff;font-size:.62rem;font-weight:700;border-radius:8px;margin-left:6px;
+}
+.nav-status{
+    display:flex;align-items:center;gap:8px;padding:0 20px;
+    border-left:1px solid rgba(255,255,255,.1);height:100%;flex-shrink:0;
+}
+.status-dot{width:6px;height:6px;border-radius:50%;background:rgba(255,255,255,.25)}
+.status-dot.connected{background:#4ADE80;box-shadow:0 0 6px rgba(74,222,128,.5)}
+.status-dot.error{background:var(--crimson)}
+.status-text{font-size:.72rem;color:rgba(255,255,255,.45);letter-spacing:.03em}
+.nav-hamburger{
+    display:none;flex-direction:column;gap:4px;background:none;border:none;
+    cursor:pointer;padding:8px;margin-left:auto;
+}
+.nav-hamburger span{display:block;width:20px;height:1.5px;background:rgba(255,255,255,.7);transition:all .2s}
+
+/* ===== Main ===== */
+#app{margin-top:var(--nav-h);flex:1;display:flex;flex-direction:column}
+.view{display:none;flex-direction:column;flex:1;animation:fadeIn .25s ease}
+.view.active{display:flex}
+@keyframes fadeIn{from{opacity:0;transform:translateY(3px)}to{opacity:1;transform:translateY(0)}}
+
+/* ===== Coast Map View ===== */
+.globe-layout{
+    display:flex;
+    height:calc(100vh - var(--nav-h) - var(--foot-h));
+}
+.globe-container{
+    flex:1;position:relative;overflow:hidden;
+    background:#D6EAF3;
+}
+#coast-map{
+    position:absolute;inset:0;z-index:1;
+}
+
+/* Overlay sobre el mapa */
+.globe-overlay{
+    position:absolute;top:18px;left:18px;z-index:400;pointer-events:none;
+    background:rgba(11,61,89,.85);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);
+    border:1px solid rgba(255,255,255,.14);border-radius:var(--r);padding:13px 18px;
+}
+.globe-label{
+    font-family:'Outfit',sans-serif;font-size:.62rem;font-weight:600;
+    letter-spacing:.14em;text-transform:uppercase;color:rgba(255,255,255,.5);margin-bottom:4px;
+}
+.globe-title{
+    font-family:'Cormorant Garant',serif;font-size:1.05rem;font-weight:600;
+    color:#fff;letter-spacing:.02em;
+}
+.globe-legend{
+    position:absolute;bottom:18px;left:18px;z-index:400;
+    background:rgba(11,61,89,.85);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);
+    border:1px solid rgba(255,255,255,.14);border-radius:var(--r-s);
+    padding:10px 14px;display:flex;flex-direction:column;gap:7px;
+}
+.legend-item{display:flex;align-items:center;gap:9px;font-size:.7rem;color:rgba(255,255,255,.75);letter-spacing:.03em}
+.legend-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.legend-dot.good{background:var(--emerald)}
+.legend-dot.warning{background:var(--amber)}
+.legend-dot.danger{background:var(--crimson)}
+.globe-hint{
+    position:absolute;bottom:18px;right:18px;z-index:400;
+    font-size:.68rem;color:rgba(255,255,255,.6);letter-spacing:.03em;
+    background:rgba(11,61,89,.8);backdrop-filter:blur(10px);
+    padding:6px 12px;border-radius:20px;border:1px solid rgba(255,255,255,.1);
+}
+
+/* ===== Marcadores del mapa ===== */
+.coast-marker-wrapper{background:transparent!important;border:none!important}
+.coast-marker{position:relative;width:42px;height:42px;cursor:pointer}
+.coast-marker-pulse{
+    position:absolute;inset:0;border-radius:50%;
+    animation:pulse 2.8s ease-out infinite;border:2px solid transparent;
+}
+.coast-marker-dot{
+    position:absolute;inset:7px;border-radius:50%;
+    display:flex;align-items:center;justify-content:center;
+    font-family:'Cormorant Garant',serif;font-size:12px;font-style:italic;font-weight:600;
+    color:#fff;box-shadow:0 2px 10px rgba(0,0,0,.2);transition:transform .15s;
+}
+.coast-marker:hover .coast-marker-dot{transform:scale(1.1)}
+
+.coast-marker.status-good .coast-marker-pulse{border-color:var(--emerald)}
+.coast-marker.status-good .coast-marker-dot{background:var(--emerald)}
+.coast-marker.status-warning .coast-marker-pulse{border-color:var(--amber);animation-duration:2.2s}
+.coast-marker.status-warning .coast-marker-dot{background:var(--amber)}
+.coast-marker.status-danger .coast-marker-pulse{border-color:var(--crimson);animation-duration:.9s}
+.coast-marker.status-danger .coast-marker-dot{background:var(--crimson)}
+
+@keyframes pulse{0%{transform:scale(1);opacity:.7}70%{transform:scale(2.3);opacity:0}100%{opacity:0}}
+
+/* Popup del mapa */
+.coast-leaflet-popup .leaflet-popup-content-wrapper{
+    padding:0;border-radius:var(--r);overflow:hidden;
+    box-shadow:var(--s3);border:none;font-family:'Outfit',sans-serif;min-width:210px;
+}
+.coast-leaflet-popup .leaflet-popup-content{margin:0}
+.coast-leaflet-popup .leaflet-popup-tip-container{display:none}
+.coast-leaflet-popup .leaflet-popup-close-button{color:#fff!important;font-size:16px!important;right:9px!important;top:7px!important;z-index:10;opacity:.7}
+.coast-popup-header{padding:12px 16px;color:#fff}
+.coast-popup-header.status-good{background:var(--emerald)}
+.coast-popup-header.status-warning{background:var(--amber)}
+.coast-popup-header.status-danger{background:var(--crimson)}
+.coast-popup-name{
+    font-family:'Cormorant Garant',serif;font-size:.95rem;font-weight:600;
+    display:block;padding-right:18px;
+}
+.coast-popup-status{font-size:.68rem;opacity:.82;margin-top:2px;display:block;letter-spacing:.03em}
+.coast-popup-body{padding:12px 16px;background:var(--white);display:flex;flex-direction:column;gap:7px}
+.coast-popup-row{
+    display:flex;justify-content:space-between;align-items:baseline;
+    font-size:.78rem;color:var(--ink-3);
+}
+.coast-popup-row b{font-family:'Space Mono',monospace;font-size:.75rem;color:var(--ink);font-weight:700}
+.coast-popup-footer{
+    padding:10px 16px;background:var(--parch);
+    font-size:.74rem;font-weight:600;letter-spacing:.04em;text-transform:uppercase;
+    color:var(--deep);text-align:center;cursor:pointer;
+    border-top:1px solid var(--rule);transition:background .15s;
+}
+.coast-popup-footer:hover{background:var(--paper);color:var(--ocean)}
+
+/* Leaflet overrides */
+.leaflet-control-zoom{border:1px solid var(--rule)!important;border-radius:var(--r-s)!important;box-shadow:var(--s2)!important;overflow:hidden}
+.leaflet-control-zoom a{color:var(--ink)!important;background:var(--white)!important;border-color:var(--rule)!important;font-family:'Outfit',sans-serif!important}
+.leaflet-control-zoom a:hover{background:var(--parch)!important}
+.leaflet-attribution-flag{display:none!important}
+
+/* ===== Sidebar ===== */
+.beach-sidebar{
+    width:var(--side-w);flex-shrink:0;
+    background:var(--white);border-left:1px solid var(--rule);
+    display:flex;flex-direction:column;overflow:hidden;
+}
+.sidebar-header{
+    display:flex;align-items:center;justify-content:space-between;
+    padding:16px 16px 13px;border-bottom:1px solid var(--rule);
+}
+.sidebar-header h2{
+    font-family:'Outfit',sans-serif;font-size:.62rem;font-weight:600;
+    color:var(--ink-3);letter-spacing:.12em;text-transform:uppercase;
+}
+.sidebar-count{
+    font-family:'Space Mono',monospace;font-size:.65rem;font-weight:700;
+    color:var(--ocean);background:var(--ocean-dim);padding:2px 8px;border-radius:20px;
+}
+.sidebar-list{flex:1;overflow-y:auto;padding:6px;display:flex;flex-direction:column;gap:1px}
+
+.beach-card{
+    display:flex;align-items:center;gap:12px;padding:11px 12px;
+    border-radius:var(--r-s);cursor:pointer;transition:background .12s;
+}
+.beach-card:hover{background:var(--parch)}
+.beach-card-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0}
+.beach-card-dot.good{background:var(--emerald)}
+.beach-card-dot.warning{background:var(--amber)}
+.beach-card-dot.danger{background:var(--crimson);animation:dotDanger .9s ease-in-out infinite}
+.beach-card-info{flex:1;min-width:0}
+.beach-card-name{font-size:.81rem;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--ink)}
+.beach-card-city{font-size:.68rem;color:var(--ink-4);margin-top:1px}
+.beach-card-meta{text-align:right;flex-shrink:0}
+.beach-card-wave{font-family:'Space Mono',monospace;font-size:.72rem;font-weight:700;color:var(--deep)}
+.beach-card-label{font-size:.64rem;color:var(--ink-4);margin-top:1px}
+
+.skeleton{background:linear-gradient(90deg,var(--paper) 25%,var(--parch) 50%,var(--paper) 75%);background-size:200% 100%;animation:shimmer 1.5s infinite;border-radius:var(--r-s)}
+.skeleton-card{height:50px;margin-bottom:2px}
+.sidebar-skeleton{padding:4px}
+@keyframes shimmer{0%{background-position:200% 0}100%{background-position:-200% 0}}
+
+/* ===== Beach Detail ===== */
+#view-beach{overflow-y:auto;background:var(--parch)}
+.beach-header{
+    display:flex;align-items:center;gap:14px;padding:14px 24px;
+    background:var(--white);border-bottom:1px solid var(--rule);
+    flex-shrink:0;flex-wrap:wrap;box-shadow:var(--s1);
+}
+.back-btn{
+    display:flex;align-items:center;gap:5px;padding:7px 12px;
+    background:var(--parch);border:1px solid var(--rule);border-radius:var(--r-s);
+    color:var(--ink-3);font-size:.78rem;font-weight:500;letter-spacing:.03em;
+    cursor:pointer;transition:all .12s;flex-shrink:0;font-family:inherit;
+}
+.back-btn:hover{color:var(--ink);border-color:var(--rule-2);background:var(--white)}
+.beach-title-block{flex:1}
+.beach-name{font-family:'Cormorant Garant',serif;font-size:1.7rem;font-weight:600;color:var(--ink)}
+.beach-location{font-size:.74rem;color:var(--ink-3);margin-top:2px;letter-spacing:.03em}
+.beach-status-badge{
+    display:inline-flex;align-items:center;gap:8px;
+    font-size:.62rem;font-weight:600;letter-spacing:.1em;text-transform:uppercase;
+    color:var(--ink-2);padding:0;background:none;border:none;border-radius:0;
+}
+.beach-status-badge::before{
+    content:'';display:inline-block;width:3px;height:16px;
+    border-radius:2px;flex-shrink:0;
+}
+.beach-status-badge.good::before{background:var(--emerald)}
+.beach-status-badge.warning::before{background:var(--amber)}
+.beach-status-badge.danger{color:var(--crimson)}
+.beach-status-badge.danger::before{background:var(--crimson)}
+
+/* Tarjetas de condición — lecturas de instrumentos */
+.beach-conditions{
+    display:flex;gap:0;padding:0;overflow-x:auto;flex-shrink:0;
+    border-bottom:1px solid var(--rule);scrollbar-width:none;
+    background:var(--white);
+}
+.beach-conditions::-webkit-scrollbar{display:none}
+.condition-card{
+    flex:1;min-width:110px;max-width:160px;flex-shrink:0;
+    padding:18px 16px 14px;background:var(--white);
+    border-right:1px solid var(--rule);cursor:default;
+    transition:background .12s;
+}
+.condition-card:last-child{border-right:none}
+.condition-card:hover{background:var(--parch)}
+.condition-card.status-good{border-top:2px solid var(--emerald)}
+.condition-card.status-warning{border-top:2px solid var(--amber)}
+.condition-card.status-danger{border-top:2px solid var(--crimson)}
+.condition-label{
+    font-size:.6rem;font-weight:600;text-transform:uppercase;
+    letter-spacing:.1em;color:var(--ink-3);margin-bottom:10px;
+}
+.condition-value{
+    font-family:'Space Mono',monospace;font-size:1.6rem;
+    color:var(--ink);line-height:1;font-weight:700;
+}
+.condition-unit{font-size:.62rem;color:var(--ink-4);margin-top:4px;letter-spacing:.02em;font-family:'Outfit',sans-serif}
+
+/* Grid de contenido de playa */
+.beach-content{
+    display:grid;grid-template-columns:340px 1fr;gap:14px;
+    padding:14px 24px 24px;
+    align-items:start;   /* evita que las columnas se estiren */
+}
+.map-panel,.chart-card{
+    background:var(--white);border:1px solid var(--rule);
+    border-radius:var(--r);overflow:hidden;display:flex;flex-direction:column;
+    box-shadow:var(--s1);
+}
+/* Mapa: altura fija para que coincida con las dos filas de gráficas */
+.map-panel{ height:494px; }
+.panel-header{
+    display:flex;align-items:center;justify-content:space-between;gap:10px;
+    padding:9px 14px;border-bottom:1px solid var(--rule);flex-shrink:0;
+    background:var(--parch);
+}
+.panel-header h3{font-size:.6rem;font-weight:600;color:var(--ink-3);text-transform:uppercase;letter-spacing:.1em}
+.panel-actions{display:flex;align-items:center;gap:12px;flex-shrink:0}
+.panel-unit,.panel-badge{font-family:'Space Mono',monospace;font-size:.62rem;color:var(--ink-4)}
+.gmaps-btn{
+    font-size:.62rem;font-weight:600;letter-spacing:.06em;text-transform:uppercase;
+    color:var(--ocean);text-decoration:none;
+    border-bottom:1px solid rgba(27,127,166,.3);padding-bottom:1px;
+    transition:border-color .15s;white-space:nowrap;
+}
+.gmaps-btn:hover{border-bottom-color:var(--ocean)}
+.beach-map{flex:1;min-height:0}
+.leaflet-tile-pane{filter:saturate(.88) brightness(1.02)}
+/* Gráficas: filas fijas para evitar estiramiento */
+.charts-grid{
+    display:grid;grid-template-columns:1fr 1fr;
+    grid-template-rows:repeat(2,240px);gap:14px;
+}
+.chart-card{height:240px;overflow:hidden}
+.chart-card canvas{flex:none;height:185px!important;padding:10px 12px 0;width:100%}
+
+/* ===== Chat ===== */
+#view-chat{
+    display:none;align-items:center;justify-content:center;
+    padding:24px;height:calc(100vh - var(--nav-h) - var(--foot-h));
+    overflow:hidden;background:var(--parch);
+}
+#view-chat.active{display:flex}
+.chat-container{
+    width:100%;max-width:740px;height:100%;
+    background:var(--white);border:1px solid var(--rule);
+    border-radius:var(--r);display:flex;flex-direction:column;overflow:hidden;box-shadow:var(--s3);
+}
+.chat-header{
+    display:flex;align-items:center;gap:14px;padding:16px 20px;
+    border-bottom:1px solid var(--rule);background:var(--deep);flex-shrink:0;
+}
+.chat-avatar-wrap{
+    width:34px;height:34px;border-radius:var(--r-s);
+    background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.18);
+    display:flex;align-items:center;justify-content:center;
+    font-family:'Cormorant Garant',serif;font-size:1rem;font-style:italic;color:#fff;flex-shrink:0;
+}
+.chat-header-info h2{font-family:'Cormorant Garant',serif;font-size:1rem;font-weight:600;color:#fff;letter-spacing:.03em}
+.chat-status{font-size:.68rem;color:rgba(255,255,255,.45);margin-top:2px;letter-spacing:.03em}
+.chat-messages{flex:1;overflow-y:auto;padding:20px;display:flex;flex-direction:column;gap:14px;background:var(--parch)}
+.message{display:flex;gap:10px;animation:messageIn .25s ease;max-width:100%}
+.message.user{flex-direction:row-reverse}
+.message-avatar{
+    width:28px;height:28px;border-radius:var(--r-s);background:var(--deep);
+    display:flex;align-items:center;justify-content:center;
+    font-family:'Cormorant Garant',serif;font-size:.85rem;font-style:italic;
+    color:#fff;flex-shrink:0;align-self:flex-start;margin-top:4px;
+}
+.message-content{
+    max-width:min(580px,82%);padding:11px 15px;
+    border-radius:var(--r);font-size:.85rem;line-height:1.65;
+}
+.message.bot .message-content{
+    background:var(--white);border:1px solid var(--rule);
+    border-radius:3px var(--r) var(--r) var(--r);color:var(--ink);
+}
+.message.user .message-content{
+    background:var(--deep);border-radius:var(--r) 3px var(--r) var(--r);color:#fff;
+}
+.message-content strong{color:var(--ocean)}
+.message.user .message-content strong{color:rgba(255,255,255,.9)}
+.message-content ul{margin:8px 0 8px 18px}
+.message-content li{margin:4px 0}
+.typing-indicator{display:flex;gap:4px;align-items:center;padding:4px 0}
+.typing-dot{width:6px;height:6px;background:var(--ink-3);border-radius:50%;animation:typingBounce 1.4s ease-in-out infinite}
+.typing-dot:nth-child(2){animation-delay:.2s}
+.typing-dot:nth-child(3){animation-delay:.4s}
+.chat-suggestions{
+    display:flex;gap:8px;padding:10px 20px;flex-wrap:wrap;
+    border-top:1px solid var(--rule);flex-shrink:0;background:var(--parch);
+}
+.suggestion-chip{
+    padding:6px 13px;background:var(--white);border:1px solid var(--rule);
+    border-radius:20px;color:var(--ink-3);font-size:.74rem;cursor:pointer;
+    transition:all .12s;font-family:inherit;font-weight:500;letter-spacing:.02em;
+}
+.suggestion-chip:hover{border-color:var(--ocean);color:var(--deep);background:var(--ocean-dim)}
+.chat-input-wrapper{
+    display:flex;gap:10px;padding:14px 20px;
+    border-top:1px solid var(--rule);background:var(--white);flex-shrink:0;
+}
+.chat-input{
+    flex:1;background:var(--parch);border:1px solid var(--rule);
+    border-radius:var(--r-s);padding:9px 14px;color:var(--ink);
+    font-family:inherit;font-size:.86rem;outline:none;transition:border-color .15s;
+}
+.chat-input:focus{border-color:var(--ocean);box-shadow:0 0 0 2px var(--ocean-dim)}
+.chat-input::placeholder{color:var(--ink-4)}
+.chat-send-btn{
+    width:40px;height:40px;background:var(--deep);border:none;border-radius:var(--r-s);
+    color:#fff;font-size:.95rem;cursor:pointer;transition:background .15s;
+    display:flex;align-items:center;justify-content:center;flex-shrink:0;
+}
+.chat-send-btn:hover{background:var(--deep-2)}
+.chat-send-btn:disabled{opacity:.4;cursor:not-allowed}
+
+/* ===== Alertas ===== */
+#view-alerts{
+    display:none;height:calc(100vh - var(--nav-h) - var(--foot-h));
+    overflow:hidden;background:var(--parch);
+}
+#view-alerts.active{display:flex}
+.alerts-container{flex:1;display:flex;flex-direction:column;max-width:840px;margin:0 auto;width:100%;padding:24px;overflow:hidden}
+.alerts-header{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:20px;gap:16px;flex-wrap:wrap;flex-shrink:0}
+.alerts-header h2{font-family:'Cormorant Garant',serif;font-size:1.8rem;font-weight:600;color:var(--ink)}
+.alerts-updated{font-size:.7rem;color:var(--ink-3);margin-top:4px;letter-spacing:.03em}
+.alerts-source-legend{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.alerts-list{flex:1;overflow-y:auto;display:flex;flex-direction:column;gap:10px}
+.alerts-empty{display:flex;flex-direction:column;align-items:center;justify-content:center;height:200px;gap:14px;color:var(--ink-4)}
+.alerts-empty-icon{
+    width:46px;height:46px;border-radius:50%;border:1px solid var(--rule);
+    display:flex;align-items:center;justify-content:center;font-size:1.1rem;color:var(--emerald);
+}
+.alerts-empty p{font-size:.82rem;letter-spacing:.02em}
+.alert-card{
+    background:var(--white);border:1px solid var(--rule);
+    border-left:3px solid;border-radius:var(--r);padding:15px 18px;animation:slideIn .25s ease;
+}
+.alert-card.severity-low{border-left-color:var(--emerald)}
+.alert-card.severity-medium{border-left-color:var(--amber)}
+.alert-card.severity-high{border-left-color:var(--crimson)}
+.alert-card-top{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:7px;flex-wrap:wrap}
+.alert-card-title{font-family:'Cormorant Garant',serif;font-size:.95rem;font-weight:600;color:var(--ink)}
+.alert-badges{display:flex;gap:6px;flex-wrap:wrap;align-items:center;flex-shrink:0}
+.alert-card-description{font-size:.81rem;color:var(--ink-2);line-height:1.55}
+.alert-card-meta{font-size:.7rem;color:var(--ink-3);margin-top:9px;display:flex;gap:14px;flex-wrap:wrap}
+.source-tag,.severity-tag{
+    display:inline-flex;align-items:center;padding:3px 9px;
+    border-radius:20px;font-size:.68rem;font-weight:600;letter-spacing:.05em;text-transform:uppercase;
+}
+.source-tag.ml{background:var(--ocean-dim);color:var(--ocean)}
+.source-tag.iot{background:var(--emerald-dim);color:var(--emerald)}
+.source-tag.cv{background:var(--amber-dim);color:var(--amber)}
+.source-tag.citizen{background:rgba(124,58,237,.08);color:#7C3AED}
+.severity-tag.low{background:var(--emerald-dim);color:var(--emerald)}
+.severity-tag.medium{background:var(--amber-dim);color:var(--amber)}
+.severity-tag.high{background:var(--crimson-dim);color:var(--crimson)}
+
+/* ===== Footer ===== */
+.app-footer{
+    height:var(--foot-h);display:flex;align-items:center;justify-content:center;
+    gap:10px;font-size:.67rem;color:var(--ink-4);letter-spacing:.03em;
+    border-top:1px solid var(--rule);background:var(--white);padding:0 24px;
+    flex-wrap:wrap;flex-shrink:0;
+}
+.footer-sep{color:var(--rule-2)}
+
+/* ===== Toast ===== */
+#toast-container{position:fixed;bottom:50px;right:20px;z-index:200;display:flex;flex-direction:column;gap:8px}
+.toast{
+    padding:10px 16px;background:var(--white);border:1px solid var(--rule);
+    border-radius:var(--r-s);font-size:.8rem;color:var(--ink);box-shadow:var(--s3);
+    animation:toastIn .25s ease;max-width:300px;
+}
+.toast.error{border-left:3px solid var(--crimson)}
+.toast.success{border-left:3px solid var(--emerald)}
+
+/* ===== Animaciones ===== */
+@keyframes messageIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+@keyframes typingBounce{0%,60%,100%{transform:translateY(0)}30%{transform:translateY(-5px)}}
+@keyframes dotDanger{0%,100%{opacity:1}50%{opacity:.3}}
+@keyframes toastIn{from{opacity:0;transform:translateX(14px)}to{opacity:1;transform:translateX(0)}}
+@keyframes slideIn{from{opacity:0;transform:translateX(14px)}to{opacity:1;transform:translateX(0)}}
+
+/* ===== Responsive ===== */
+@media(max-width:1024px){:root{--side-w:250px}}
+@media(max-width:768px){
+    .nav-hamburger{display:flex}
+    .nav-status{display:none}
+    .nav-links{
+        display:none;position:fixed;top:var(--nav-h);left:0;right:0;
+        flex-direction:column;background:var(--deep);
+        border-top:1px solid rgba(255,255,255,.1);padding:8px;gap:1px;z-index:99;
+        height:auto;
+    }
+    .nav-links.open{display:flex}
+    .nav-link{width:100%;padding:12px 16px;height:auto;border-bottom:none;border-radius:var(--r-s)}
+    .nav-link.active{background:rgba(255,255,255,.1);border-bottom:none}
+    .globe-layout{flex-direction:column}
+    .beach-sidebar{display:none}
+    .beach-content{grid-template-columns:1fr}
+    .charts-grid{grid-template-columns:1fr}
+    .beach-header,.beach-conditions{padding:12px 16px}
+    #view-chat{padding:12px}
+    .beach-conditions{overflow-x:auto}
+}
+@media(max-width:480px){
+    .condition-card{min-width:100px}
+    .condition-value{font-size:1.3rem}
+    .alerts-container{padding:14px}
+    .app-footer{height:auto;padding:8px 14px}
+    .chat-suggestions{display:none}
+}

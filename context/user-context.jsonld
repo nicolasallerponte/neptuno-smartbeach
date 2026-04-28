@@ -1,0 +1,80 @@
+{
+  "@context": [
+    "https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context-v1.8.jsonld",
+    {
+      "smartbeach": "https://smartbeach.2026.udc.es/ns/",
+      "fiware": "https://uri.fiware.org/ns/data-models#",
+      "sdm": "https://smartdatamodels.org/",
+      "sdmBeach": "https://smartdatamodels.org/dataModel.PointOfInterest/",
+      "sdmWeather": "https://smartdatamodels.org/dataModel.Weather/",
+      "sdmWQ": "https://smartdatamodels.org/dataModel.WaterQuality/",
+      "sdmDevice": "https://smartdatamodels.org/dataModel.Device/",
+
+      "Beach": "sdmBeach:Beach",
+      "PointOfInterest": "sdmBeach:PointOfInterest",
+      "SeaConditions": "sdmWeather:SeaConditions",
+      "WeatherAlert": "sdmWeather:WeatherAlert",
+      "WeatherForecast": "sdmWeather:WeatherForecast",
+      "WeatherObserved": "sdmWeather:WeatherObserved",
+      "WaterQualityObserved": "sdmWQ:WaterQualityObserved",
+      "WaterQualityPredicted": "sdmWQ:WaterQualityPredicted",
+      "Device": "sdmDevice:Device",
+      "DeviceMeasurement": "sdmDevice:DeviceMeasurement",
+
+      "beachType": "sdmBeach:beachType",
+      "occupationRate": "sdmBeach:occupationRate",
+      "facilities": "sdmBeach:facilities",
+      "accessType": "sdmBeach:accessType",
+      "length": "sdmBeach:length",
+      "width": "sdmBeach:width",
+
+      "waveHeight": "sdmWeather:waveHeight",
+      "wavePeriod": "sdmWeather:wavePeriod",
+      "waveLevel": "sdmWeather:waveLevel",
+      "seaSurfaceTemperature": "sdmWeather:seaSurfaceTemperature",
+      "salinity": "sdmWeather:salinity",
+      "pH": "sdmWQ:pH",
+      "conductivity": "sdmWQ:conductivity",
+      "turbidity": "sdmWQ:turbidity",
+      "dissolvedOxygen": "sdmWQ:dissolvedOxygen",
+      "escherichiaColi": "sdmWQ:escherichiaColi",
+      "intestinalEnterococci": "sdmWQ:intestinalEnterococci",
+
+      "weatherType": "sdmWeather:weatherType",
+      "visibility": "sdmWeather:visibility",
+      "windSpeed": "sdmWeather:windSpeed",
+      "windDirection": "sdmWeather:windDirection",
+      "temperature": "sdm:temperature",
+      "feelsLikeTemperature": "sdmWeather:feelsLikeTemperature",
+      "relativeHumidity": "sdmWeather:relativeHumidity",
+      "precipitation": "sdmWeather:precipitation",
+      "uVIndexMax": "sdmWeather:uVIndexMax",
+      "precipitationProbability": "sdmWeather:precipitationProbability",
+
+      "dateObserved": "sdm:dateObserved",
+      "dateIssued": "sdmWeather:dateIssued",
+      "validFrom": "sdmWeather:validFrom",
+      "validTo": "sdmWeather:validTo",
+      "validity": "sdmWeather:validity",
+
+      "alertSource": "sdmWeather:alertSource",
+      "category": "sdm:category",
+      "severity": "sdmWeather:severity",
+
+      "deviceCategory": "sdmDevice:deviceCategory",
+      "controlledProperty": "sdmDevice:controlledProperty",
+      "controlledAsset": "sdmDevice:controlledAsset",
+      "batteryLevel": "sdmDevice:batteryLevel",
+      "dateLastValueReported": "sdmDevice:dateLastValueReported",
+
+      "dataProvider": "sdm:dataProvider",
+      "source": "sdm:source",
+      "address": "https://schema.org/address",
+      "addressLocality": "https://schema.org/addressLocality",
+      "addressRegion": "https://schema.org/addressRegion",
+
+      "refPointOfInterest": "smartbeach:refPointOfInterest",
+      "refDevice": "smartbeach:refDevice"
+    }
+  ]
+}
