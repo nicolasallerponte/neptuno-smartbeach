@@ -118,6 +118,17 @@ async def upsert_orion_entity(
         logger.warning("Failed to create %s: %s", entity_id, resp.status_code)
 
 
+async def delete_orion_entity(client: httpx.AsyncClient, entity_id: str) -> None:
+    """Delete an entity from Orion-LD, ignoring 404."""
+    url = f"{ORION_URL}/ngsi-ld/v1/entities/{entity_id}"
+    try:
+        resp = await client.delete(url, headers=HEADERS_LD)
+        if resp.status_code not in (204, 404):
+            logger.warning("Failed to delete %s: %s", entity_id, resp.status_code)
+    except Exception as exc:
+        logger.error("Error deleting entity %s: %s", entity_id, exc)
+
+
 # ---------------------------------------------------------------------------
 # Update functions per entity type
 # ---------------------------------------------------------------------------
@@ -163,6 +174,31 @@ async def update_sea_conditions(
         entity["swellDescription"] = {"type": "Property", "value": zone_data["swellDescription"]}
 
     await upsert_orion_entity(client, entity)
+
+    # Wave height alerts
+    wave_h = sea["waveHeight"]
+    alert_id = f"urn:ngsi-ld:WeatherAlert:{b.id}-waves"
+    if wave_h >= 2.5:
+        sev = "high"
+    elif wave_h >= 1.5:
+        sev = "medium"
+    else:
+        sev = None
+    if sev:
+        await upsert_orion_entity(client, {
+            "id": alert_id, "type": "WeatherAlert",
+            "name": {"type": "Property", "value": f"Oleaje elevado en {b.name}"},
+            "dateIssued": {"type": "Property", "value": now},
+            "validFrom": {"type": "Property", "value": now},
+            "alertSource": {"type": "Property", "value": "IoTSensor"},
+            "category": {"type": "Property", "value": "highWaves"},
+            "severity": {"type": "Property", "value": sev},
+            "description": {"type": "Property", "value": f"Altura de ola: {wave_h:.1f} m. Se recomienda precaución en el baño."},
+            "refPointOfInterest": {"type": "Relationship", "object": b.urn},
+            "@context": CONTEXT_URL,
+        })
+    else:
+        await delete_orion_entity(client, alert_id)
 
 
 async def update_weather_observed(
@@ -225,6 +261,30 @@ async def update_weather_observed(
             entity[field] = {"type": "Property", "value": val}
 
     await upsert_orion_entity(client, entity)
+
+    # UV index alerts
+    alert_id = f"urn:ngsi-ld:WeatherAlert:{b.id}-uv"
+    if uv >= 11:
+        sev = "high"
+    elif uv >= 8:
+        sev = "medium"
+    else:
+        sev = None
+    if sev:
+        await upsert_orion_entity(client, {
+            "id": alert_id, "type": "WeatherAlert",
+            "name": {"type": "Property", "value": f"Índice UV elevado en {b.name}"},
+            "dateIssued": {"type": "Property", "value": now},
+            "validFrom": {"type": "Property", "value": now},
+            "alertSource": {"type": "Property", "value": "IoTSensor"},
+            "category": {"type": "Property", "value": "highUVIndex"},
+            "severity": {"type": "Property", "value": sev},
+            "description": {"type": "Property", "value": f"Índice UV: {uv}. Usa protección solar y limita la exposición al sol."},
+            "refPointOfInterest": {"type": "Relationship", "object": b.urn},
+            "@context": CONTEXT_URL,
+        })
+    else:
+        await delete_orion_entity(client, alert_id)
 
 
 async def update_weather_forecast(
@@ -299,6 +359,31 @@ async def update_water_quality(client: httpx.AsyncClient, b: BeachInfo) -> None:
         "@context": CONTEXT_URL,
     }
     await upsert_orion_entity(client, entity)
+
+    # Water quality alerts
+    ecoli = wq["escherichiaColi"]
+    alert_id = f"urn:ngsi-ld:WeatherAlert:{b.id}-water-quality"
+    if ecoli >= 500:
+        sev = "high"
+    elif ecoli >= 200:
+        sev = "medium"
+    else:
+        sev = None
+    if sev:
+        await upsert_orion_entity(client, {
+            "id": alert_id, "type": "WeatherAlert",
+            "name": {"type": "Property", "value": f"Calidad del agua degradada en {b.name}"},
+            "dateIssued": {"type": "Property", "value": now},
+            "validFrom": {"type": "Property", "value": now},
+            "alertSource": {"type": "Property", "value": "IoTSensor"},
+            "category": {"type": "Property", "value": "poorWaterQuality"},
+            "severity": {"type": "Property", "value": sev},
+            "description": {"type": "Property", "value": f"E. coli: {ecoli:.0f} UFC/100mL. No se recomienda el baño."},
+            "refPointOfInterest": {"type": "Relationship", "object": b.urn},
+            "@context": CONTEXT_URL,
+        })
+    else:
+        await delete_orion_entity(client, alert_id)
 
 
 # ---------------------------------------------------------------------------

@@ -393,14 +393,25 @@ const NeptunoApp = {
         const text = document.getElementById('status-text');
         if (!dot || !text) return;
         if (data && data.status === 'ok') {
-            dot.className = 'status-dot connected';
-            text.textContent = data.ollama === 'connected' ? 'Conectado · IA activa' : 'Conectado';
+            if (data.ollama === 'connected') {
+                dot.className = 'status-dot connected';
+                text.textContent = 'Conectado · IA activa';
+            } else {
+                dot.className = 'status-dot warning';
+                text.textContent = 'Conectado · IA offline';
+            }
         } else if (data === null) {
             dot.className = 'status-dot error';
             text.textContent = 'Backend offline';
         } else {
             dot.className = 'status-dot error';
             text.textContent = 'Error';
+        }
+        const chatStatus = document.getElementById('chat-status');
+        if (chatStatus) {
+            chatStatus.textContent = (data && data.ollama === 'connected')
+                ? 'Propulsado por Llama 3.1 · Datos en tiempo real de Orion'
+                : 'Asistente no disponible · Ollama no está activo';
         }
     },
 

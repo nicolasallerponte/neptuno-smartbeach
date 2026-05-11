@@ -126,6 +126,7 @@ body{
 }
 .status-dot{width:6px;height:6px;border-radius:50%;background:rgba(255,255,255,.25)}
 .status-dot.connected{background:#4ADE80;box-shadow:0 0 6px rgba(74,222,128,.5)}
+.status-dot.warning{background:#FBBF24;box-shadow:0 0 6px rgba(251,191,36,.5)}
 .status-dot.error{background:var(--crimson)}
 .status-text{font-size:.72rem;color:rgba(255,255,255,.45);letter-spacing:.03em}
 .nav-hamburger{

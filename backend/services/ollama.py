@@ -150,7 +150,7 @@ async def check_health() -> bool:
                     logger.info("Ollama healthy, model %s available", OLLAMA_MODEL)
                 else:
                     logger.warning("Ollama healthy but model %s not found (available: %s)", OLLAMA_MODEL, available)
-                return True
+                return model_available
     except Exception:
         pass
     return False
