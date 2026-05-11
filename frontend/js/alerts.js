@@ -36,7 +36,7 @@ const NeptunoAlerts = {
         if (badge) {
             if (count > 0) {
                 badge.textContent = count;
-                badge.style.display = 'inline-block';
+                badge.style.display = 'inline-grid';
             } else {
                 badge.style.display = 'none';
             }
