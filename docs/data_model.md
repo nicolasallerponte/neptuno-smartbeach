@@ -116,7 +116,7 @@ NEPTUNO uses 10 NGSI-LD entity types from official FIWARE Smart Data Models. All
 
 **Source:** `dataModel.Weather`
 **Update Frequency:** Every 10 minutes
-**Data Path:** Simulator -> IoT Agent -> Orion
+**Data Path:** Simulator -> Orion (direct PATCH)
 **Count:** 12
 **ID Pattern:** `urn:ngsi-ld:SeaConditions:{beachId}`
 
@@ -127,12 +127,12 @@ NEPTUNO uses 10 NGSI-LD entity types from official FIWARE Smart Data Models. All
 | waveHeight | Property | Number | MTR | 0.8 | Puertos del Estado / Sim |
 | wavePeriod | Property | Number | SEC | 6.2 | Puertos del Estado / Sim |
 | waveLevel | Property | Number (1-5) | - | 2 | Calculated |
-| windSpeed | Property | Number | KMH | 12.0 | Sim |
-| windDirection | Property | Number (0-360) | - | 270 | Sim |
 | seaSurfaceTemperature | Property | Number | CEL | 17.4 | Puertos del Estado / Sim |
 | pH | Property | Number | - | 8.1 | Sim |
 | salinity | Property | Number | - | 35.2 | Sim |
-| weatherType | Property | String | - | "sunnyDay" | Derived |
+| waveHeightText | Property | String | - | "1 - 1.5 m" | Puertos del Estado (optional) |
+| seaStateDescription | Property | String | - | "Marejadilla" | Puertos del Estado (optional) |
+| swellDescription | Property | String | - | "Mar de fondo del NW" | Puertos del Estado (optional) |
 | refPointOfInterest | Relationship | URI | - | urn:ngsi-ld:Beach:Riazor | Static |
 | refDevice | Relationship | URI | - | urn:ngsi-ld:Device:boya-Riazor | Static |
 
@@ -161,6 +161,11 @@ NEPTUNO uses 10 NGSI-LD entity types from official FIWARE Smart Data Models. All
 | visibility | Property | String | - | "good" | Default |
 | dataProvider | Property | String | - | "MeteoGalicia" | Static |
 | source | Property | String | - | URL | Static |
+| atmosphericPressure | Property | Number | HPA | 1013.2 | MeteoGalicia (optional) |
+| windGust | Property | Number | MTS | 8.5 | MeteoGalicia (optional) |
+| temperatureMax | Property | Number | CEL | 21.0 | MeteoGalicia (optional) |
+| temperatureMin | Property | Number | CEL | 14.0 | MeteoGalicia (optional) |
+| dewPoint | Property | Number | CEL | 12.0 | MeteoGalicia (optional) |
 | refPointOfInterest | Relationship | URI | - | urn:ngsi-ld:Beach:Riazor | Static |
 | refDevice | Relationship | URI | - | urn:ngsi-ld:Device:meteo-Riazor | Static |
 
@@ -196,22 +201,32 @@ NEPTUNO uses 10 NGSI-LD entity types from official FIWARE Smart Data Models. All
 ### 7. WeatherAlert (Dynamic - Event)
 
 **Source:** `dataModel.Weather`
-**Update Frequency:** Event-driven (ML prediction, CV detection)
-**Data Path:** ML/CV -> Orion (direct POST)
-**Count:** Variable
-**ID Pattern:** `urn:ngsi-ld:WeatherAlert:{uuid}`
+**Update Frequency:** Periodic (every simulator cycle ~10 min for IoTSensor alerts) + event-driven (ML prediction, CV detection)
+**Data Path:** Simulator / ML / CV -> Orion (direct POST/PATCH)
+**Count:** Variable (up to 3 per beach from simulator: waves, UV, water quality)
+**ID Pattern:**
+- Simulator-generated (deterministic): `urn:ngsi-ld:WeatherAlert:{beachId}-waves`, `{beachId}-uv`, `{beachId}-water-quality`
+- ML/CV-generated: `urn:ngsi-ld:WeatherAlert:{uuid}`
 
 | Attribute | NGSI-LD Type | Data Type | Example | Source |
 |-----------|-------------|-----------|---------|--------|
-| name | Property | String | "High wave alert at Pantin" | Generated |
+| name | Property | String | "Oleaje elevado en Riazor" | Generated |
 | dateIssued | Property | DateTime | "2026-04-21T16:00:00Z" | Generated |
-| validFrom | Property | DateTime | "2026-04-21T17:00:00Z" | Generated |
-| validTo | Property | DateTime | "2026-04-21T20:00:00Z" | Generated |
-| alertSource | Property | String | "MLModel" / "CVSystem" / "IoTSensor" | System |
-| category | Property | String | "highWaves" / "poorWaterQuality" / "crowding" | ML/CV |
-| severity | Property | String | "low" / "medium" / "high" | ML/CV |
-| description | Property | String | "Wave height predicted..." | Generated |
-| refPointOfInterest | Relationship | URI | urn:ngsi-ld:Beach:Pantin | Static |
+| validFrom | Property | DateTime | "2026-04-21T16:00:00Z" | Generated |
+| validTo | Property | DateTime | "2026-04-21T20:00:00Z" | ML/CV only |
+| alertSource | Property | String | "IoTSensor" / "MLModel" / "CVSystem" | System |
+| category | Property | String | "highWaves" / "poorWaterQuality" / "highUVIndex" / "crowding" | System |
+| severity | Property | String | "medium" / "high" | Threshold-based |
+| description | Property | String | "Altura de ola: 2.1 m..." | Generated |
+| refPointOfInterest | Relationship | URI | urn:ngsi-ld:Beach:Riazor | Static |
+
+**Simulator alert thresholds:**
+
+| Category | Medium | High |
+|----------|--------|------|
+| highWaves | waveHeight ≥ 1.5 m | waveHeight ≥ 2.5 m |
+| highUVIndex | uVIndexMax ≥ 8 | uVIndexMax ≥ 11 |
+| poorWaterQuality | E. coli ≥ 200 UFC/100mL | E. coli ≥ 500 UFC/100mL |
 
 ---
 
@@ -234,8 +249,6 @@ NEPTUNO uses 10 NGSI-LD entity types from official FIWARE Smart Data Models. All
 | dissolvedOxygen | Property | Number | M1 | 8.5 | Sim |
 | escherichiaColi | Property | Number | UFC | 45 | INTECMAR / Sim |
 | intestinalEnterococci | Property | Number | UFC | 12 | INTECMAR / Sim |
-| dataProvider | Property | String | - | "INTECMAR" | Static |
-| source | Property | String | - | URL | Static |
 | refDevice | Relationship | URI | - | urn:ngsi-ld:Device:sensor-agua-Riazor | Static |
 | refPointOfInterest | Relationship | URI | - | urn:ngsi-ld:Beach:Riazor | Static |
 

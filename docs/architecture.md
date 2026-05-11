@@ -10,8 +10,8 @@ NEPTUNO follows a microservices architecture orchestrated via Docker Compose, wi
 +=====================================================================+
 |                        EXTERNAL DATA SOURCES                         |
 +=====================================================================+
-|  MeteoGalicia API v4  |  INTECMAR  |  Puertos del Estado  |  Xunta  |
-|  (weather obs/fcst)   |  (water Q) |  (buoy sea state)    |  (cat)  |
+|  MeteoGalicia API v5/mgrss  |  INTECMAR  |  Puertos del Estado  |  Xunta  |
+|  (MeteoSIX obs/fcst)  |  (water Q) |  (buoy sea state)    |  (cat)  |
 +-----------+-----------+------+-----+----------+-----------+----+----+
             |                  |                |                |
             v                  v                v                v
@@ -23,9 +23,16 @@ NEPTUNO follows a microservices architecture orchestrated via Docker Compose, wi
 |  | simulator.py        |    | init_orion.py    |                    |
 |  | - Fetches real APIs |    | - Creates static |                    |
 |  | - Falls back to sim |    |   entities       |                    |
-|  | - IoT Agent POST    |    | - Provisions IoT |                    |
-|  | - Direct Orion PATCH|    |   Agent devices  |                    |
+|  | - Direct Orion PATCH|    | - Provisions IoT |                    |
+|  | - Alert generation  |    |   Agent devices  |                    |
 |  +----------+----------+    +------------------+                    |
+|                                                                     |
+|  +---------------------+                                           |
+|  | backfill.py         |                                           |
+|  | - 7-day historical  |                                           |
+|  |   data load         |                                           |
+|  | - Direct CrateDB    |                                           |
+|  +---------------------+                                           |
 |             |                                                       |
 |  +----------+----------+    +------------------+                    |
 |  | ml/predict.py       |    | cv/alerts.py     |                    |
@@ -36,6 +43,7 @@ NEPTUNO follows a microservices architecture orchestrated via Docker Compose, wi
 |                                                                     |
 |  +--------------------------------------------------------------+  |
 |  | FastAPI Backend (:8000)                                       |  |
+|  | - GET /api/health          (backend + Ollama status)          |  |
 |  | - GET /api/beaches         (current state from Orion)         |  |
 |  | - GET /api/beaches/{id}    (detail with all sub-entities)     |  |
 |  | - GET /api/beaches/{id}/history  (QuantumLeap time series)    |  |
@@ -121,23 +129,20 @@ NEPTUNO follows a microservices architecture orchestrated via Docker Compose, wi
 | Component | Technology | Port | Purpose |
 |-----------|-----------|------|---------|
 | Backend API | FastAPI + Uvicorn | 8000 | REST API + static file server |
-| Simulator | Python (async) | - | Data collection and IoT simulation |
+| Simulator | Python (async) | - | Data collection, direct Orion updates, automatic alert generation |
+| Backfill | Python (async) | - | One-shot 7-day historical data load direct to CrateDB |
 | ML Pipeline | scikit-learn, XGBoost | - | Water quality prediction |
 | CV Pipeline | ONNX Runtime + YOLOv11 | - | Beach occupancy detection |
 | Ollama | Llama 3.1:8b | 11434 | LLM for chat assistant |
 
 ## Data Flow Pipelines
 
-### Pipeline 1: Real-time Sea Conditions (IoT Agent Path)
+### Pipeline 1: Real-time Sea Conditions (Direct Orion Path)
 
 ```
 Puertos del Estado API / Simulator
     |
-    | HTTP POST to :7896/iot/json?k={apikey}&i=boya-{beachId}
-    v
-IoT Agent (NGSI-LD mode)
-    |
-    | NGSI-LD entity create/update
+    | POST/PATCH :1026/ngsi-ld/v1/entities/{id}/attrs
     v
 Orion-LD (:1026)
     |
@@ -149,6 +154,9 @@ QuantumLeap (:8668)
     v
 CrateDB (mtsmartbeach.etseaconditions)
 ```
+
+Note: IoT Agent is provisioned with device definitions but the current
+data flow bypasses it, writing directly to Orion for all entity types.
 
 ### Pipeline 2: Weather Data (Direct Orion Path)
 
@@ -190,6 +198,22 @@ ml/predict.py
     | 4. POST WeatherAlert if dangerous
     v
 Orion-LD -> QuantumLeap -> CrateDB
+```
+
+### Pipeline 3b: Automatic Alert Generation (Simulator)
+
+```
+simulator.py (every ~10 min cycle)
+    |
+    | Check thresholds: waveHeight / uVIndexMax / escherichiaColi
+    |   - Condition exceeded → POST/PATCH WeatherAlert entity to Orion
+    |   - Condition cleared  → DELETE WeatherAlert entity from Orion
+    v
+Orion-LD (:1026)
+    |
+    | Subscription notification
+    v
+QuantumLeap -> CrateDB (mtsmartbeach.etweatheralert)
 ```
 
 ### Pipeline 4: Frontend Data Access

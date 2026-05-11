@@ -22,7 +22,7 @@ Beachgoers and coastal authorities lack a unified platform to access real-time b
 ## 4. Functional Requirements
 
 ### FR-1: Real-time Data Collection
-- **FR-1.1:** Fetch meteorological observations from MeteoGalicia API v4 every hour
+- **FR-1.1:** Fetch meteorological observations from MeteoGalicia API v5/mgrss (MeteoSIX) every hour
 - **FR-1.2:** Fetch sea condition data from Puertos del Estado API every 10 minutes
 - **FR-1.3:** Fetch water quality data from INTECMAR twice daily
 - **FR-1.4:** Fall back to realistic simulated values when APIs are unavailable
@@ -35,9 +35,9 @@ Beachgoers and coastal authorities lack a unified platform to access real-time b
 - **FR-2.4:** Include `@context` reference in all entity bodies
 
 ### FR-3: IoT Device Simulation
-- **FR-3.1:** Provision virtual buoy devices in IoT Agent for sea conditions
-- **FR-3.2:** Provision virtual water quality sensors for WaterQualityObserved
-- **FR-3.3:** Send device measurements via HTTP POST to IoT Agent port 7896
+- **FR-3.1:** Provision virtual buoy, meteo, and water sensor devices in Orion as Device entities
+- **FR-3.2:** Update all dynamic entities (SeaConditions, WeatherObserved, WaterQualityObserved, WeatherForecast) via direct PATCH to Orion-LD — IoT Agent is provisioned but bypassed in the current data flow
+- **FR-3.3:** IoT Agent HTTP endpoint (port 7896) reserved for future device integration
 
 ### FR-4: Time-series Persistence
 - **FR-4.1:** Create 6 NGSI-LD subscriptions for dynamic entity types
@@ -63,10 +63,12 @@ Beachgoers and coastal authorities lack a unified platform to access real-time b
 - **FR-7.4:** Support Spanish, Galician, and English queries
 
 ### FR-8: Alert System
-- **FR-8.1:** Generate WeatherAlert entities from ML model predictions
-- **FR-8.2:** Generate crowding alerts from CV occupancy detection
-- **FR-8.3:** Poll for active alerts every 30 seconds
-- **FR-8.4:** Display alerts with severity color coding and source badges
+- **FR-8.1:** Generate WeatherAlert entities automatically from simulator sensor thresholds (waves, UV, water quality) on every data cycle — source `IoTSensor`
+- **FR-8.2:** Generate WeatherAlert entities from ML model water quality predictions — source `MLModel`
+- **FR-8.3:** Generate crowding alerts from CV occupancy detection — source `CVSystem`
+- **FR-8.4:** Auto-remove alerts when conditions return to safe thresholds
+- **FR-8.5:** Poll for active alerts every 30 seconds
+- **FR-8.6:** Display alerts with severity color coding and source badges
 
 ### FR-9: ML Water Quality Prediction
 - **FR-9.1:** Train Gradient Boosting classifier for quality class (good/acceptable/poor)
@@ -112,7 +114,7 @@ Beachgoers and coastal authorities lack a unified platform to access real-time b
 
 | Source | Data Type | Update Frequency | Authentication |
 |--------|----------|-----------------|----------------|
-| MeteoGalicia API v4 | Weather observations, forecasts | Hourly | None (free) |
+| MeteoGalicia API v5/mgrss (MeteoSIX) | Weather observations, forecasts | Hourly | None (free) |
 | INTECMAR | Water quality (E. coli, enterococci) | Twice daily | None |
 | Puertos del Estado | Buoy data (waves, SST) | 10 minutes | None |
 | Xunta Open Data | Beach catalogue (static) | Once (init) | None |
