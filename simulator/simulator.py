@@ -2,7 +2,7 @@
 Main sensor data simulator.
 
 Runs a continuous loop that, for every beach:
-  1. Fetches real data from MeteoGalicia / INTECMAR / Puertos del Estado
+  1. Fetches real data from MeteoGalicia / MeteoSIX / maritime prediction
   2. Falls back to realistic simulated values when APIs are unavailable
   3. Sends buoy readings (SeaConditions) through the IoT Agent HTTP endpoint
   4. Sends water quality readings (WaterQualityObserved) through the IoT Agent
@@ -29,9 +29,15 @@ from dotenv import load_dotenv
 load_dotenv()
 sys.path.insert(0, ".")
 
-from simulator.beaches import BEACHES, METEOGALICIA_STATION_MAP, BeachInfo  # noqa: E402
+from simulator.beaches import (  # noqa: E402
+    BEACHES,
+    MARITIME_ZONE_MAP,
+    METEOGALICIA_STATION_MAP,
+    BeachInfo,
+)
 from simulator.meteo_fetcher import (  # noqa: E402
     fetch_forecast,
+    fetch_maritime_prediction,
     fetch_observation,
     simulated_forecast,
     simulated_observation,
@@ -39,6 +45,7 @@ from simulator.meteo_fetcher import (  # noqa: E402
     simulated_water_quality,
 )
 from data.fetch_real_data import fetch_puertos_sea_state  # noqa: E402
+# send_iot_data kept for potential future IoT Agent use
 
 logger = logging.getLogger("neptuno.simulator")
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(name)s] %(levelname)s: %(message)s")
@@ -54,7 +61,6 @@ SEA_INTERVAL = int(os.getenv("SEA_CONDITIONS_INTERVAL", "600"))
 WEATHER_INTERVAL = int(os.getenv("WEATHER_OBSERVED_INTERVAL", "3600"))
 FORECAST_INTERVAL = int(os.getenv("WEATHER_FORECAST_INTERVAL", "21600"))
 WQ_INTERVAL = int(os.getenv("WATER_QUALITY_INTERVAL", "43200"))
-
 
 HEADERS_LD = {
     "Content-Type": "application/ld+json",
@@ -117,46 +123,82 @@ async def upsert_orion_entity(
 # ---------------------------------------------------------------------------
 
 
-async def update_sea_conditions(client: httpx.AsyncClient, b: BeachInfo) -> None:
-    """Update SeaConditions for one beach via IoT Agent."""
+async def update_sea_conditions(
+    client: httpx.AsyncClient,
+    b: BeachInfo,
+    maritime: dict[int, dict],
+) -> None:
+    """Update SeaConditions for one beach directly in Orion-LD."""
     sea = await fetch_puertos_sea_state(b.lat, b.lon, client)
     if sea is None:
         sea = simulated_sea_conditions(b.lat)
 
-    # Map to IoT Agent short keys (SeaConditions Smart Data Model attributes only)
-    # windSpeed/windDirection belong to WeatherObserved, not SeaConditions
-    iot_payload = {
-        "wh": sea["waveHeight"],
-        "wp": sea["wavePeriod"],
-        "wl": sea.get("waveLevel", min(5, max(1, int(sea["waveHeight"] / 0.5)))),
-        "sst": sea["seaSurfaceTemperature"],
-        "ph": sea["pH"],
-        "sal": sea["salinity"],
+    zone_id = MARITIME_ZONE_MAP.get(b.id)
+    zone_data = maritime.get(zone_id, {}) if zone_id else {}
+
+    # Use real maritime water temperature when available
+    sst = zone_data.get("waterTemperature") or sea["seaSurfaceTemperature"]
+
+    now = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+    entity: dict = {
+        "id": f"urn:ngsi-ld:SeaConditions:{b.id}",
+        "type": "SeaConditions",
+        "dateObserved": {"type": "Property", "value": now},
+        "location": {"type": "GeoProperty", "value": {"type": "Point", "coordinates": b.coordinates}},
+        "waveHeight": {"type": "Property", "value": sea["waveHeight"], "unitCode": "MTR"},
+        "wavePeriod": {"type": "Property", "value": sea["wavePeriod"], "unitCode": "SEC"},
+        "waveLevel": {"type": "Property", "value": sea.get("waveLevel", min(5, max(1, int(sea["waveHeight"] / 0.5))))},
+        "seaSurfaceTemperature": {"type": "Property", "value": sst, "unitCode": "CEL"},
+        "pH": {"type": "Property", "value": sea["pH"]},
+        "salinity": {"type": "Property", "value": sea["salinity"]},
+        "refPointOfInterest": {"type": "Relationship", "object": b.urn},
+        "refDevice": {"type": "Relationship", "object": b.buoy_urn},
+        "@context": CONTEXT_URL,
     }
-    await send_iot_data(client, f"boya-{b.id}", iot_payload)
+    if zone_data.get("waveHeightText"):
+        entity["waveHeightText"] = {"type": "Property", "value": zone_data["waveHeightText"]}
+    if zone_data.get("seaStateDescription"):
+        entity["seaStateDescription"] = {"type": "Property", "value": zone_data["seaStateDescription"]}
+    if zone_data.get("swellDescription"):
+        entity["swellDescription"] = {"type": "Property", "value": zone_data["swellDescription"]}
+
+    await upsert_orion_entity(client, entity)
 
 
-async def update_weather_observed(client: httpx.AsyncClient, b: BeachInfo) -> None:
+async def update_weather_observed(
+    client: httpx.AsyncClient,
+    b: BeachInfo,
+    maritime: dict[int, dict],
+) -> None:
     """Update WeatherObserved via direct Orion PATCH."""
     station_id = METEOGALICIA_STATION_MAP.get(b.id, 14000)
     obs = await fetch_observation(station_id, client)
     if obs is None:
         obs = simulated_observation(b.lat)
+    else:
+        # Some stations lack pressure/gust sensors — fill gaps with simulation
+        sim = simulated_observation(b.lat)
+        for _k in ("atmosphericPressure", "windGust", "temperatureMax", "temperatureMin", "dewPoint"):
+            if obs.get(_k) is None:
+                obs[_k] = sim[_k]
+
+    # Use maritime UV index when available (real value, not derived from humidity)
+    zone_id = MARITIME_ZONE_MAP.get(b.id)
+    zone_data = maritime.get(zone_id, {}) if zone_id else {}
+    uv = zone_data.get("uvMax") or max(1, min(11, int(8 - obs.get("relativeHumidity", 0.7) * 6)))
 
     now = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
-    feels_like = round(obs["temperature"] - (obs.get("windSpeed", 10) * 0.1), 1)
-    weather_types = ["sunnyDay", "partlyCloudy", "cloudy", "overcast", "lightRain"]
+    feels_like = round(obs["temperature"] - (obs.get("windSpeed", 3.0) * 0.6), 1)
     wt = "lightRain" if obs.get("precipitation", 0) > 0.5 else "sunnyDay"
-    uv = max(1, min(11, int(8 - obs.get("relativeHumidity", 0.7) * 6)))
 
-    entity = {
+    entity: dict = {
         "id": f"urn:ngsi-ld:WeatherObserved:{b.id}",
         "type": "WeatherObserved",
         "dateObserved": {"type": "Property", "value": now},
         "location": {"type": "GeoProperty", "value": {"type": "Point", "coordinates": b.coordinates}},
         "temperature": {"type": "Property", "value": obs["temperature"], "unitCode": "CEL"},
         "feelsLikeTemperature": {"type": "Property", "value": feels_like, "unitCode": "CEL"},
-        "windSpeed": {"type": "Property", "value": obs.get("windSpeed", 10.0), "unitCode": "KMH"},
+        "windSpeed": {"type": "Property", "value": obs.get("windSpeed", 3.0), "unitCode": "MTS"},
         "windDirection": {"type": "Property", "value": obs.get("windDirection", 270)},
         "relativeHumidity": {"type": "Property", "value": obs.get("relativeHumidity", 0.7)},
         "precipitation": {"type": "Property", "value": obs.get("precipitation", 0.0), "unitCode": "MMT"},
@@ -164,22 +206,43 @@ async def update_weather_observed(client: httpx.AsyncClient, b: BeachInfo) -> No
         "weatherType": {"type": "Property", "value": wt},
         "visibility": {"type": "Property", "value": "good"},
         "dataProvider": {"type": "Property", "value": "MeteoGalicia"},
-        "source": {"type": "Property", "value": "https://servizos.meteogalicia.gal/apiv4"},
+        "source": {"type": "Property", "value": "https://servizos.meteogalicia.gal/mgrss"},
         "refPointOfInterest": {"type": "Relationship", "object": b.urn},
         "refDevice": {"type": "Relationship", "object": b.meteo_urn},
         "@context": CONTEXT_URL,
     }
+
+    # Optional enriched fields from observation API
+    for field, key in [
+        ("atmosphericPressure", "atmosphericPressure"),
+        ("windGust", "windGust"),
+        ("temperatureMax", "temperatureMax"),
+        ("temperatureMin", "temperatureMin"),
+        ("dewPoint", "dewPoint"),
+    ]:
+        val = obs.get(key)
+        if val is not None:
+            entity[field] = {"type": "Property", "value": val}
+
     await upsert_orion_entity(client, entity)
 
 
-async def update_weather_forecast(client: httpx.AsyncClient, b: BeachInfo) -> None:
+async def update_weather_forecast(
+    client: httpx.AsyncClient,
+    b: BeachInfo,
+    maritime: dict[int, dict],
+) -> None:
     """Update WeatherForecast via direct Orion PATCH."""
     fc = await fetch_forecast(b.lat, b.lon, client)
     if fc is None:
         fc = simulated_forecast()
 
+    # Enrich with maritime zone temperature range when available
+    zone_id = MARITIME_ZONE_MAP.get(b.id)
+    zone_data = maritime.get(zone_id, {}) if zone_id else {}
+
     now = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
-    wt = "sunnyDay" if fc.get("precipitationProbability", 0) < 0.3 else "partlyCloudy"
+    wt = fc.get("weatherType", "sunnyDay" if fc.get("precipitationProbability", 0) < 0.3 else "partlyCloudy")
 
     entity = {
         "id": f"urn:ngsi-ld:WeatherForecast:{b.id}",
@@ -204,10 +267,10 @@ async def update_weather_forecast(client: httpx.AsyncClient, b: BeachInfo) -> No
         },
         "relativeHumidity": {"type": "Property", "value": 0.70},
         "precipitationProbability": {"type": "Property", "value": fc.get("precipitationProbability", 0.1)},
-        "windSpeed": {"type": "Property", "value": fc.get("windSpeed", 15.0), "unitCode": "KMH"},
+        "windSpeed": {"type": "Property", "value": fc.get("windSpeed", 4.0), "unitCode": "MTS"},
         "windDirection": {"type": "Property", "value": fc.get("windDirection", 270)},
         "weatherType": {"type": "Property", "value": wt},
-        "uVIndexMax": {"type": "Property", "value": fc.get("uVIndexMax", 5)},
+        "uVIndexMax": {"type": "Property", "value": zone_data.get("uvMax") or fc.get("uVIndexMax", 5)},
         "dataProvider": {"type": "Property", "value": "MeteoGalicia"},
         "refPointOfInterest": {"type": "Relationship", "object": b.urn},
         "@context": CONTEXT_URL,
@@ -216,18 +279,26 @@ async def update_weather_forecast(client: httpx.AsyncClient, b: BeachInfo) -> No
 
 
 async def update_water_quality(client: httpx.AsyncClient, b: BeachInfo) -> None:
-    """Update WaterQualityObserved via IoT Agent."""
+    """Update WaterQualityObserved directly in Orion-LD."""
     wq = simulated_water_quality()
-    iot_payload = {
-        "temp": wq["temperature"],
-        "ph": wq["pH"],
-        "cond": wq["conductivity"],
-        "turb": wq["turbidity"],
-        "do": wq["dissolvedOxygen"],
-        "ecoli": wq["escherichiaColi"],
-        "entero": wq["intestinalEnterococci"],
+    now = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+    entity = {
+        "id": f"urn:ngsi-ld:WaterQualityObserved:{b.id}",
+        "type": "WaterQualityObserved",
+        "dateObserved": {"type": "Property", "value": now},
+        "location": {"type": "GeoProperty", "value": {"type": "Point", "coordinates": b.coordinates}},
+        "temperature": {"type": "Property", "value": wq["temperature"], "unitCode": "CEL"},
+        "pH": {"type": "Property", "value": wq["pH"]},
+        "conductivity": {"type": "Property", "value": wq["conductivity"]},
+        "turbidity": {"type": "Property", "value": wq["turbidity"]},
+        "dissolvedOxygen": {"type": "Property", "value": wq["dissolvedOxygen"]},
+        "escherichiaColi": {"type": "Property", "value": wq["escherichiaColi"]},
+        "intestinalEnterococci": {"type": "Property", "value": wq["intestinalEnterococci"]},
+        "refPointOfInterest": {"type": "Relationship", "object": b.urn},
+        "refDevice": {"type": "Relationship", "object": b.water_sensor_urn},
+        "@context": CONTEXT_URL,
     }
-    await send_iot_data(client, f"sensor-agua-{b.id}", iot_payload)
+    await upsert_orion_entity(client, entity)
 
 
 # ---------------------------------------------------------------------------
@@ -242,31 +313,32 @@ async def run_cycle(
     last_forecast: float,
     last_wq: float,
     now: float,
-) -> tuple[float, float, float]:
-    """Run a single cycle of data updates for all beaches.
-
-    Returns updated timestamps for weather, forecast and water quality
-    so the caller can track when each type was last updated.
-    """
+    maritime_cache: dict[int, dict],
+) -> tuple[float, float, float, dict[int, dict]]:
+    """Run a single simulation cycle for all beaches."""
     logger.info("=== Simulation cycle %d ===", cycle)
 
     new_last_weather = last_weather
     new_last_forecast = last_forecast
     new_last_wq = last_wq
+    new_maritime = maritime_cache
+
+    # Refresh maritime data on the same cadence as forecast (every 6h)
+    if now - last_forecast >= FORECAST_INTERVAL or cycle == 1:
+        new_maritime = await fetch_maritime_prediction(client)
 
     for b in BEACHES:
-        # Sea conditions every cycle (fastest interval)
-        await update_sea_conditions(client, b)
+        await update_sea_conditions(client, b, new_maritime)
 
     if now - last_weather >= WEATHER_INTERVAL or cycle == 1:
         for b in BEACHES:
-            await update_weather_observed(client, b)
+            await update_weather_observed(client, b, new_maritime)
         new_last_weather = now
         logger.info("Weather observations updated (%d beaches)", len(BEACHES))
 
     if now - last_forecast >= FORECAST_INTERVAL or cycle == 1:
         for b in BEACHES:
-            await update_weather_forecast(client, b)
+            await update_weather_forecast(client, b, new_maritime)
         new_last_forecast = now
         logger.info("Weather forecasts updated (%d beaches)", len(BEACHES))
 
@@ -277,7 +349,7 @@ async def run_cycle(
         logger.info("Water quality updated (%d beaches)", len(BEACHES))
 
     logger.info("Cycle %d complete for %d beaches", cycle, len(BEACHES))
-    return new_last_weather, new_last_forecast, new_last_wq
+    return new_last_weather, new_last_forecast, new_last_wq, new_maritime
 
 
 async def main() -> None:
@@ -287,7 +359,6 @@ async def main() -> None:
     logger.info("Orion: %s | IoT Agent: %s", ORION_URL, IOT_HTTP_URL)
     logger.info("Intervals: sea=%ds weather=%ds forecast=%ds wq=%ds", SEA_INTERVAL, WEATHER_INTERVAL, FORECAST_INTERVAL, WQ_INTERVAL)
 
-    # Wait for Orion
     async with httpx.AsyncClient(timeout=TIMEOUT) as client:
         for attempt in range(30):
             try:
@@ -304,14 +375,14 @@ async def main() -> None:
             return
 
         cycle = 0
-        # Start with epoch 0 so first cycle updates everything
         last_weather = last_forecast = last_wq = 0.0
+        maritime_cache: dict[int, dict] = {}
         while True:
             cycle += 1
             now = time.monotonic()
             try:
-                last_weather, last_forecast, last_wq = await run_cycle(
-                    client, cycle, last_weather, last_forecast, last_wq, now
+                last_weather, last_forecast, last_wq, maritime_cache = await run_cycle(
+                    client, cycle, last_weather, last_forecast, last_wq, now, maritime_cache
                 )
             except Exception as exc:
                 logger.exception("Error in simulation cycle %d: %s", cycle, exc)

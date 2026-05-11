@@ -14,7 +14,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garant:ital,wght@0,400;0,600;0,700;1,400;1,600&family=Space+Mono:ital,wght@0,400;0,700;1,400&family=Outfit:wght@300;400;500;600&display=swap" rel="stylesheet">
 
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="">
-    <link rel="stylesheet" href="css/main.css">
+    <link rel="stylesheet" href="css/main.css?v=2">
 </head>
 <body>
 
@@ -62,7 +62,7 @@
                     <div id="coast-map"></div>
                 <div class="globe-overlay" aria-hidden="true">
                         <p class="globe-label">A Coruna · Galicia</p>
-                        <h1 class="globe-title">12 playas monitorizadas</h1>
+                        <h1 class="globe-title">18 playas monitorizadas</h1>
                     </div>
                     <div class="globe-legend" id="globe-legend" aria-label="Leyenda">
                         <div class="legend-item"><span class="legend-dot good"></span> Buenas condiciones</div>
@@ -117,7 +117,7 @@
                 <div class="condition-card" id="card-wind" role="listitem">
                     <div class="condition-label">Viento</div>
                     <div class="condition-value" id="val-wind">--</div>
-                    <div class="condition-unit">km / h</div>
+                    <div class="condition-unit">m / s</div>
                 </div>
                 <div class="condition-card" id="card-water" role="listitem">
                     <div class="condition-label">E. coli</div>
@@ -134,6 +134,56 @@
                     <div class="condition-value" id="val-occupation">--</div>
                     <div class="condition-unit">nivel</div>
                 </div>
+                <div class="condition-card" id="card-water-temp" role="listitem">
+                    <div class="condition-label">Temp. agua</div>
+                    <div class="condition-value" id="val-water-temp">--</div>
+                    <div class="condition-unit">°C</div>
+                </div>
+                <div class="condition-card" id="card-pressure" role="listitem">
+                    <div class="condition-label">Presion</div>
+                    <div class="condition-value" id="val-pressure">--</div>
+                    <div class="condition-unit">hPa</div>
+                </div>
+                <div class="condition-card" id="card-gust" role="listitem">
+                    <div class="condition-label">Racha max.</div>
+                    <div class="condition-value" id="val-gust">--</div>
+                    <div class="condition-unit">m / s</div>
+                </div>
+                <div class="condition-card" id="card-bath" role="listitem">
+                    <div class="condition-label">Indice bano</div>
+                    <div class="condition-value" id="val-bath">--</div>
+                    <div class="condition-unit">★ / 5</div>
+                </div>
+            </div>
+
+            <div class="maritime-info" id="maritime-info" style="display:none;">
+                <div class="maritime-row" id="row-sea-state"></div>
+                <div class="maritime-row" id="row-swell"></div>
+                <div class="maritime-row" id="row-wave-range"></div>
+            </div>
+
+            <div class="forecast-strip" id="forecast-strip" style="display:none;">
+                <h4>Prediccion para mañana</h4>
+                <div class="fc-cell">
+                    <div class="fc-cell-label">Temp. min / max</div>
+                    <div class="fc-cell-value" id="fc-temp">--</div>
+                    <div class="fc-cell-unit">°C</div>
+                </div>
+                <div class="fc-cell">
+                    <div class="fc-cell-label">Viento</div>
+                    <div class="fc-cell-value" id="fc-wind">-- <span class="wind-dir-arrow" id="fc-wind-arrow">↑</span></div>
+                    <div class="fc-cell-unit">m / s</div>
+                </div>
+                <div class="fc-cell">
+                    <div class="fc-cell-label">Prob. lluvia</div>
+                    <div class="fc-cell-value" id="fc-precip">--</div>
+                    <div class="fc-cell-unit">%</div>
+                </div>
+                <div class="fc-cell">
+                    <div class="fc-cell-label">UV máximo</div>
+                    <div class="fc-cell-value" id="fc-uv">--</div>
+                    <div class="fc-cell-unit">índice</div>
+                </div>
             </div>
 
             <div class="beach-content">
@@ -143,6 +193,8 @@
                         <div class="panel-actions">
                             <span class="panel-badge" id="map-coords"></span>
                             <a id="googlemaps-link" class="gmaps-btn" target="_blank" rel="noopener noreferrer" href="#">Ver en Google Maps</a>
+                            <span class="panel-badge" aria-hidden="true">·</span>
+                            <a id="earth3d-link" class="gmaps-btn" target="_blank" rel="noopener noreferrer" href="#">Vista 3D</a>
                         </div>
                     </div>
                     <div id="beach-map" class="beach-map" aria-label="Mapa de la playa"></div>
@@ -196,7 +248,7 @@
                     <div class="message bot">
                         <div class="message-avatar" aria-hidden="true">N</div>
                         <div class="message-content">
-                            Hola, soy el asistente costero NEPTUNO. Tengo acceso a datos en tiempo real de 12 playas de A Coruna — condiciones maritimas, calidad del agua, alertas y predicciones. Preguntame lo que necesites.
+                            Hola, soy el asistente costero NEPTUNO. Tengo acceso a datos en tiempo real de 18 playas de A Coruña — condiciones maritimas, calidad del agua, alertas y predicciones. Preguntame lo que necesites.
                         </div>
                     </div>
                 </div>
@@ -258,11 +310,11 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-annotation@3.0.1/dist/chartjs-plugin-annotation.min.js"></script>
 
-    <script src="js/app.js"></script>
-    <script src="js/globe.js"></script>
-    <script src="js/map.js"></script>
-    <script src="js/charts.js"></script>
-    <script src="js/chat.js"></script>
-    <script src="js/alerts.js"></script>
+    <script src="js/app.js?v=2"></script>
+    <script src="js/globe.js?v=2"></script>
+    <script src="js/map.js?v=2"></script>
+    <script src="js/charts.js?v=2"></script>
+    <script src="js/chat.js?v=2"></script>
+    <script src="js/alerts.js?v=2"></script>
 </body>
 </html>

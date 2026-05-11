@@ -290,7 +290,7 @@ body{
 /* ===== Beach Detail ===== */
 #view-beach{overflow-y:auto;background:var(--parch)}
 .beach-header{
-    display:flex;align-items:center;gap:14px;padding:14px 24px;
+    display:flex;align-items:center;gap:14px;padding:10px 20px;
     background:var(--white);border-bottom:1px solid var(--rule);
     flex-shrink:0;flex-wrap:wrap;box-shadow:var(--s1);
 }
@@ -326,8 +326,8 @@ body{
 }
 .beach-conditions::-webkit-scrollbar{display:none}
 .condition-card{
-    flex:1;min-width:110px;max-width:160px;flex-shrink:0;
-    padding:18px 16px 14px;background:var(--white);
+    flex:1;min-width:100px;max-width:150px;flex-shrink:0;
+    padding:11px 14px 10px;background:var(--white);
     border-right:1px solid var(--rule);cursor:default;
     transition:background .12s;
 }
@@ -337,34 +337,33 @@ body{
 .condition-card.status-warning{border-top:2px solid var(--amber)}
 .condition-card.status-danger{border-top:2px solid var(--crimson)}
 .condition-label{
-    font-size:.6rem;font-weight:600;text-transform:uppercase;
-    letter-spacing:.1em;color:var(--ink-3);margin-bottom:10px;
+    font-size:.58rem;font-weight:600;text-transform:uppercase;
+    letter-spacing:.08em;color:var(--ink-3);margin-bottom:6px;
 }
 .condition-value{
-    font-family:'Space Mono',monospace;font-size:1.6rem;
+    font-family:'Space Mono',monospace;font-size:1.4rem;
     color:var(--ink);line-height:1;font-weight:700;
 }
-.condition-unit{font-size:.62rem;color:var(--ink-4);margin-top:4px;letter-spacing:.02em;font-family:'Outfit',sans-serif}
+.condition-unit{font-size:.6rem;color:var(--ink-4);margin-top:3px;letter-spacing:.02em;font-family:'Outfit',sans-serif}
 
 /* Grid de contenido de playa */
 .beach-content{
-    display:grid;grid-template-columns:340px 1fr;gap:14px;
-    padding:14px 24px 24px;
-    align-items:start;   /* evita que las columnas se estiren */
+    display:grid;grid-template-columns:280px 1fr;gap:10px;
+    padding:10px 20px 16px;
+    align-items:start;
 }
 .map-panel,.chart-card{
     background:var(--white);border:1px solid var(--rule);
     border-radius:var(--r);overflow:hidden;display:flex;flex-direction:column;
     box-shadow:var(--s1);
 }
-/* Mapa: altura fija para que coincida con las dos filas de gráficas */
-.map-panel{ height:494px; }
+.map-panel{ height:418px; }
 .panel-header{
     display:flex;align-items:center;justify-content:space-between;gap:10px;
-    padding:9px 14px;border-bottom:1px solid var(--rule);flex-shrink:0;
+    padding:6px 12px;border-bottom:1px solid var(--rule);flex-shrink:0;
     background:var(--parch);
 }
-.panel-header h3{font-size:.6rem;font-weight:600;color:var(--ink-3);text-transform:uppercase;letter-spacing:.1em}
+.panel-header h3{font-size:.6rem;font-weight:600;color:var(--ink-3);text-transform:uppercase;letter-spacing:.1em;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .panel-actions{display:flex;align-items:center;gap:12px;flex-shrink:0}
 .panel-unit,.panel-badge{font-family:'Space Mono',monospace;font-size:.62rem;color:var(--ink-4)}
 .gmaps-btn{
@@ -376,13 +375,25 @@ body{
 .gmaps-btn:hover{border-bottom-color:var(--ocean)}
 .beach-map{flex:1;min-height:0}
 .leaflet-tile-pane{filter:saturate(.88) brightness(1.02)}
+/* Layer toggle control inside detail map */
+.neptuno-layer-toggle{
+    display:flex;border-radius:var(--r-s);overflow:hidden;
+    box-shadow:var(--s2);border:1px solid var(--rule);
+}
+.layer-btn{
+    padding:4px 10px;font-size:.62rem;font-family:'Outfit',sans-serif;font-weight:600;
+    text-transform:uppercase;letter-spacing:.06em;border:none;cursor:pointer;
+    background:var(--white);color:var(--ink-3);transition:background .15s,color .15s;
+}
+.layer-btn.active{background:var(--deep);color:#fff}
+.layer-btn:not(.active):hover{background:var(--parch)}
 /* Gráficas: filas fijas para evitar estiramiento */
 .charts-grid{
     display:grid;grid-template-columns:1fr 1fr;
-    grid-template-rows:repeat(2,240px);gap:14px;
+    grid-template-rows:repeat(2,200px);gap:10px;
 }
-.chart-card{height:240px;overflow:hidden}
-.chart-card canvas{flex:none;height:185px!important;padding:10px 12px 0;width:100%}
+.chart-card{height:200px;overflow:hidden}
+.chart-card canvas{flex:none;height:150px!important;padding:8px 10px 0;width:100%}
 
 /* ===== Chat ===== */
 #view-chat{
@@ -562,3 +573,25 @@ body{
     .app-footer{height:auto;padding:8px 14px}
     .chat-suggestions{display:none}
 }
+
+/* Maritime info block — compact single-line bar */
+.maritime-info{margin:0 20px 8px;display:flex;flex-wrap:wrap;gap:0;background:var(--surface-raised);border:1px solid var(--border);border-radius:var(--r-s);overflow:hidden}
+.maritime-row{padding:5px 14px;font-size:.78rem;color:var(--text-secondary);flex:1 1 200px;line-height:1.4;border-right:1px solid var(--border)}
+.maritime-row:last-child{border-right:none}
+.maritime-label{font-weight:600;color:var(--text-primary)}
+@media(max-width:600px){.maritime-info{margin:0 12px 8px}}
+
+/* Chart cursor */
+canvas { cursor: crosshair; }
+
+/* Forecast strip */
+.forecast-strip{display:flex;align-items:center;gap:0;margin:0 20px 8px;background:var(--surface-raised);border:1px solid var(--border);border-radius:var(--r-s);overflow:hidden}
+.forecast-strip h4{padding:0 14px;font-size:.6rem;text-transform:uppercase;letter-spacing:.08em;color:var(--text-secondary);white-space:nowrap;border-right:1px solid var(--border);align-self:stretch;display:flex;align-items:center;margin:0;min-width:fit-content}
+.fc-cell{display:flex;flex-direction:column;gap:1px;padding:6px 14px;flex:1;border-right:1px solid var(--border)}
+.fc-cell:last-child{border-right:none}
+.fc-cell-label{font-size:.58rem;text-transform:uppercase;letter-spacing:.06em;color:var(--text-secondary)}
+.fc-cell-value{font-size:.95rem;font-weight:600;color:var(--text-primary);font-family:'Space Mono',monospace;line-height:1.2}
+.fc-cell-unit{font-size:.6rem;color:var(--text-secondary)}
+.wind-dir-arrow{display:inline-block;font-size:.85rem;transition:transform .3s}
+@media(max-width:700px){.forecast-strip{flex-wrap:wrap}.forecast-strip h4{width:100%;border-right:none;border-bottom:1px solid var(--border)}}
+@media(max-width:600px){.forecast-strip{margin:0 12px 8px}}

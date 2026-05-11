@@ -161,9 +161,17 @@ async def get_all_beaches_summary() -> str:
 
 
 def _extract_values(entity: dict[str, Any]) -> dict[str, Any]:
-    """Flatten NGSI-LD Property/Relationship wrapper to plain values."""
+    """Flatten NGSI-LD Property/Relationship wrapper to plain values.
+
+    Handles both short-form keys (e.g. 'waveHeight') and long-form URI keys
+    (e.g. 'https://smartdatamodels.org/dataModel.Weather/waveHeight') that
+    Orion-LD returns when the context is not resolved at query time.
+    """
     result: dict[str, Any] = {}
-    for key, val in entity.items():
+    for raw_key, val in entity.items():
+        # Normalise URI keys to their local name
+        key = _local_name(raw_key)
+
         if key.startswith("@") or key in ("type",):
             result[key] = val
             continue
@@ -182,6 +190,17 @@ def _extract_values(entity: dict[str, Any]) -> dict[str, Any]:
         else:
             result[key] = val
     return result
+
+
+def _local_name(key: str) -> str:
+    """Extract local name from a URI key, or return key as-is."""
+    if "://" not in key:
+        return key
+    # Take part after last '/' or '#'
+    for sep in ("#", "/"):
+        if sep in key:
+            return key.rsplit(sep, 1)[-1]
+    return key
 
 
 def _val(entity: dict, key: str, default: Any = None) -> Any:

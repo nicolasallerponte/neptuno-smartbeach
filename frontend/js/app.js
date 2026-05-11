@@ -152,7 +152,9 @@ const NeptunoApp = {
             const city = address.addressLocality || '';
             const status = this.getStatusColor(beach);
             const sea = beach.currentSeaConditions || {};
+            const weather = beach.currentWeather || {};
             const waveH = sea.waveHeight != null ? `${sea.waveHeight}m` : '--';
+            const sst = sea.seaSurfaceTemperature != null ? `${sea.seaSurfaceTemperature}°` : '--';
 
             const card = document.createElement('div');
             card.className = 'beach-card';
@@ -167,7 +169,7 @@ const NeptunoApp = {
                 </div>
                 <div class="beach-card-meta">
                     <div class="beach-card-wave">${waveH}</div>
-                    <div class="beach-card-label">olas</div>
+                    <div class="beach-card-label">${sst} agua</div>
                 </div>
             `;
             card.addEventListener('click', () => {
@@ -182,17 +184,23 @@ const NeptunoApp = {
 
     _renderSidebarFallback() {
         const beaches = [
-            {id:'Riazor', name:'Playa de Riazor', city:'A Coruna'},
-            {id:'Orzan', name:'Playa de Orzan', city:'A Coruna'},
-            {id:'Doninos', name:'Praia de Doninos', city:'Ferrol'},
-            {id:'Valdovino', name:'Praia de Valdovino', city:'Valdovino'},
-            {id:'Pantin', name:'Praia de Pantin', city:'Cedeira'},
-            {id:'Caion', name:'Praia de Caion', city:'A Laracha'},
-            {id:'Baldaio', name:'Praia de Baldaio', city:'Carballo'},
-            {id:'Malpica', name:'Playa de Malpica', city:'Malpica'},
+            {id:'Riazor', name:'Playa de Riazor', city:'A Coruña'},
+            {id:'Orzan', name:'Playa de Orzán', city:'A Coruña'},
+            {id:'SantaCristina', name:'Praia de Santa Cristina', city:'Oleiros'},
+            {id:'Bastiagueiro', name:'Praia de Bastiagueiro', city:'Oleiros'},
+            {id:'Mino', name:'Praia de Miño', city:'Miño'},
             {id:'Cabanas', name:'Praia de Cabanas', city:'Cabanas'},
+            {id:'Doninos', name:'Praia de Doniños', city:'Ferrol'},
+            {id:'Valdovino', name:'Praia de Valdoviño', city:'Valdoviño'},
+            {id:'Pantin', name:'Praia de Pantín', city:'Cedeira'},
+            {id:'Sabon', name:'Praia de Sabón', city:'Arteixo'},
+            {id:'Caion', name:'Praia de Caión', city:'A Laracha'},
+            {id:'Baldaio', name:'Praia de Baldaio', city:'Carballo'},
+            {id:'Razo', name:'Praia de Razo', city:'Carballo'},
+            {id:'Malpica', name:'Playa de Malpica', city:'Malpica de Bergantiños'},
+            {id:'Laxe', name:'Praia de Laxe', city:'Laxe'},
             {id:'Carnota', name:'Praia de Carnota', city:'Carnota'},
-            {id:'Larino', name:'Praia de Larino', city:'Carnota'},
+            {id:'Larino', name:'Praia de Lariño', city:'Carnota'},
             {id:'Barona', name:'Praia de Barona', city:'Porto do Son'},
         ];
         const list = document.getElementById('sidebar-list');
@@ -228,7 +236,8 @@ const NeptunoApp = {
         document.getElementById('beach-location').textContent = '';
         const badge = document.getElementById('beach-status-badge');
         if (badge) { badge.className = 'beach-status-badge'; badge.textContent = ''; }
-        ['val-temp','val-waves','val-wind','val-water','val-uv','val-occupation']
+        ['val-temp','val-waves','val-wind','val-water','val-uv','val-occupation',
+         'val-water-temp','val-pressure','val-gust','val-bath']
             .forEach(id => { const el = document.getElementById(id); if (el) el.textContent = '--'; });
 
         const detail = await this.fetchJSON(`/api/beaches/${beachId}`);
@@ -270,10 +279,39 @@ const NeptunoApp = {
         const ecoliEl = document.getElementById('val-water');
         if (ecoliEl) ecoliEl.textContent = ecoli != null ? ecoli : '--';
 
+        // New enriched fields
+        setVal('val-water-temp', sea.seaSurfaceTemperature != null ? sea.seaSurfaceTemperature : null);
+        setVal('val-pressure', weather.atmosphericPressure != null ? weather.atmosphericPressure : null);
+        setVal('val-gust', weather.windGust != null ? weather.windGust : null);
+
+        // Bathing index (0-5 stars)
+        const bathIdx = this._calcBathingIndex(sea.waveHeight, ecoli, weather.uVIndexMax);
+        const bathEl = document.getElementById('val-bath');
+        if (bathEl) bathEl.textContent = bathIdx != null ? bathIdx : '--';
+        this._colorCard('card-bath', 5 - bathIdx, 1.5, 3);
+
+        // Maritime text info
+        const maritime = document.getElementById('maritime-info');
+        if (maritime) {
+            const seaDesc = sea.seaStateDescription;
+            const swellDesc = sea.swellDescription;
+            const waveRange = sea.waveHeightText;
+            if (seaDesc || swellDesc || waveRange) {
+                maritime.style.display = '';
+                const r1 = document.getElementById('row-sea-state');
+                const r2 = document.getElementById('row-swell');
+                const r3 = document.getElementById('row-wave-range');
+                if (r1 && seaDesc) r1.innerHTML = `<span class="maritime-label">Mar:</span> ${this._esc(seaDesc)}`;
+                if (r2 && swellDesc) r2.innerHTML = `<span class="maritime-label">Fondo:</span> ${this._esc(swellDesc)}`;
+                if (r3 && waveRange) r3.innerHTML = `<span class="maritime-label">Rango olas:</span> ${this._esc(waveRange)} m`;
+            }
+        }
+
         // Color-code condition cards
         this._colorCard('card-waves', sea.waveHeight, 1.5, 2.5);
         this._colorCard('card-water', ecoli, 200, 500);
         this._colorCard('card-uv', weather.uVIndexMax, 6, 9);
+        this._colorCard('card-water-temp', 20 - (sea.seaSurfaceTemperature || 15), 4, 7);
 
         // Update map coords badge
         const location = this.extractValue(detail, 'location');
@@ -284,8 +322,57 @@ const NeptunoApp = {
         const gmLink = document.getElementById('googlemaps-link');
         if (gmLink && coords) gmLink.href = `https://www.google.com/maps?q=${coords[1]},${coords[0]}`;
 
+        const earthLink = document.getElementById('earth3d-link');
+        if (earthLink && coords) earthLink.href = `https://earth.google.com/web/@${coords[1]},${coords[0]},10a,400d,35y,0h,60t,0r`;
+
         if (coords && typeof NeptunoMap !== 'undefined') {
             NeptunoMap.init(coords[1], coords[0], name, this.extractValue(detail, 'occupationRate'));
+        }
+
+        // Wind direction arrow (rotates to show where wind is coming FROM)
+        const windArrow = document.getElementById('val-wind-arrow');
+        if (!windArrow) {
+            const windCard = document.getElementById('card-wind');
+            if (windCard) {
+                const arrow = document.createElement('span');
+                arrow.id = 'val-wind-arrow';
+                arrow.className = 'wind-dir-arrow';
+                arrow.style.cssText = 'display:block;font-size:.85rem;color:var(--text-secondary);margin-top:2px';
+                windCard.appendChild(arrow);
+            }
+        }
+        if (weather.windDirection != null) {
+            const el = document.getElementById('val-wind-arrow');
+            if (el) {
+                el.textContent = this._windLabel(weather.windDirection);
+                el.title = `${weather.windDirection}°`;
+            }
+        }
+
+        // Forecast strip
+        const fc = detail.forecast || {};
+        const fcStrip = document.getElementById('forecast-strip');
+        if (fcStrip && (fc.temperature || fc.windSpeed != null || fc.precipitationProbability != null)) {
+            fcStrip.style.display = '';
+            const temp = fc.temperature;
+            const fcTempEl = document.getElementById('fc-temp');
+            if (fcTempEl && temp) {
+                const mn = temp.minimum != null ? temp.minimum : (fc.temperatureMin || '--');
+                const mx = temp.maximum != null ? temp.maximum : (fc.temperatureMax || '--');
+                fcTempEl.textContent = `${mn} / ${mx}`;
+            }
+            const fcWindEl = document.getElementById('fc-wind');
+            if (fcWindEl && fc.windSpeed != null) fcWindEl.childNodes[0].textContent = `${fc.windSpeed} `;
+            const fcWindArrow = document.getElementById('fc-wind-arrow');
+            if (fcWindArrow && fc.windDirection != null) {
+                fcWindArrow.textContent = this._windLabel(fc.windDirection);
+                fcWindArrow.title = `${fc.windDirection}°`;
+            }
+            const fcPrecipEl = document.getElementById('fc-precip');
+            if (fcPrecipEl && fc.precipitationProbability != null)
+                fcPrecipEl.textContent = Math.round(fc.precipitationProbability * 100);
+            const fcUvEl = document.getElementById('fc-uv');
+            if (fcUvEl && fc.uVIndexMax != null) fcUvEl.textContent = fc.uVIndexMax;
         }
 
         if (typeof NeptunoCharts !== 'undefined') NeptunoCharts.loadAll(beachId, weather, sea);
@@ -337,6 +424,30 @@ const NeptunoApp = {
         if (waveH > 2.5 || ecoli > 500) return 'danger';
         if (waveH > 1.5 || ecoli > 200 || uv > 8) return 'warning';
         return 'good';
+    },
+
+    // Wind direction degrees → compass label
+    _windLabel(deg) {
+        const dirs = ['N','NE','E','SE','S','SO','O','NO'];
+        return dirs[Math.round(deg / 45) % 8];
+    },
+
+    // Bathing quality index 0-5 stars
+    // wave < 1m → ok, ecoli < 100 → ok, uv < 6 → ok
+    _calcBathingIndex(waveH, ecoli, uv) {
+        if (waveH == null && ecoli == null && uv == null) return null;
+        let score = 5;
+        const w = waveH || 0;
+        const e = ecoli || 0;
+        const u = uv || 0;
+        if (w > 2.5) score -= 3;
+        else if (w > 1.5) score -= 2;
+        else if (w > 1.0) score -= 1;
+        if (e > 500) score -= 3;
+        else if (e > 200) score -= 2;
+        else if (e > 100) score -= 1;
+        if (u > 8) score -= 1;
+        return Math.max(0, Math.min(5, score));
     },
 
     _esc(str) {

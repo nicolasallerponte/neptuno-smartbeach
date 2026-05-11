@@ -6,10 +6,13 @@
 const NeptunoCharts = {
     charts: {},
 
-    // Shared chart styling for dark theme
+    // Shared chart styling
     defaultOptions: {
         responsive: true,
         maintainAspectRatio: false,
+        // Show tooltip on any hover position along the vertical axis
+        interaction: { mode: 'index', intersect: false },
+        hover: { mode: 'index', intersect: false },
         plugins: {
             legend: {
                 display: false,
@@ -41,11 +44,11 @@ const NeptunoCharts = {
             }
         },
         elements: {
-            point: { radius: 2, hoverRadius: 5 },
-            line: { tension: 0.4, borderWidth: 2 },
+            point: { radius: 2, hoverRadius: 6 },
+            line: { tension: 0.3, borderWidth: 2 },
         },
         animation: {
-            duration: 800,
+            duration: 600,
             easing: 'easeOutQuart',
         },
     },
@@ -96,7 +99,8 @@ const NeptunoCharts = {
     _formatTime(isoStr) {
         try {
             const d = new Date(isoStr);
-            return `${d.getMonth() + 1}/${d.getDate()} ${d.getHours()}:00`;
+            const mm = String(d.getMinutes()).padStart(2, '0');
+            return `${d.getMonth() + 1}/${d.getDate()} ${d.getHours()}:${mm}`;
         } catch {
             return isoStr;
         }
@@ -107,7 +111,7 @@ const NeptunoCharts = {
         const canvas = document.getElementById('chart-temperature');
         if (!canvas) return;
 
-        // If no real data, generate demo
+        // Use demo data only if no real data at all
         if (ts.labels.length === 0) {
             const demo = this._generateDemoData(168, 14, 19);
             ts.labels = demo.labels;
