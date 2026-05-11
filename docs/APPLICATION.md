@@ -23,7 +23,7 @@ Coastal monitoring has traditionally relied on manual measurements and periodic 
 
 | Feature | Technology | Data Source |
 |---------|-----------|-------------|
-| Weather monitoring | MeteoGalicia API v4 | Real API + simulated fallback |
+| Weather monitoring | MeteoGalicia API v5/mgrss (MeteoSIX) | Real API + simulated fallback |
 | Sea conditions | Puertos del Estado API | Real API + simulated fallback |
 | Water quality | INTECMAR data | Real scraping + simulated fallback |
 | Beach catalogue | Xunta Open Data | Real catalogue + hardcoded fallback |
@@ -40,44 +40,45 @@ Coastal monitoring has traditionally relied on manual measurements and periodic 
 ## Architecture Diagram
 
 ```
-+------------------+     +------------------+     +------------------+
-|  MeteoGalicia    |     |    INTECMAR       |     | Puertos Estado   |
-|  API v4          |     |  Water Quality    |     | Buoy Data        |
-+--------+---------+     +--------+---------+     +--------+---------+
-         |                        |                        |
-         v                        v                        v
-+--------+--------------------------------------------------------+
-|                    simulator/simulator.py                        |
-|  (fetches real data, falls back to simulation)                  |
-+--------+----------------------------+---------------------------+
-         |                            |
-   IoT Agent :7896              Direct PATCH
-   (buoy + water sensor)        (weather data)
-         |                            |
-         v                            v
-+--------+----------------------------+---------------------------+
-|                    Orion-LD :1026                                |
-|              (NGSI-LD Context Broker)                           |
-+--------+----------------------------+---------------------------+
-         |                            |
-   Subscriptions                  REST API
-         |                            |
-         v                            v
-+--------+---------+     +--------+---------+     +-----------+
-| QuantumLeap :8668|     | FastAPI :8000    |     | Ollama    |
-+--------+---------+     | (Backend API)    |     | :11434    |
-         |               +--------+---------+     +-----+-----+
-         v                        |                      |
-+--------+---------+              v                      |
-| CrateDB :4200    |     +-------+--------+             |
-| (Time Series)    |     |  Frontend SPA  |<------------+
-+--------+---------+     | Three.js Globe |
-         |               | Leaflet Maps   |
-         v               | Chart.js       |
-+--------+---------+     | Chat UI        |
-| Grafana :3003    |     +----------------+
-| (6 Dashboards)   |
-+------------------+
++---------------------+     +-----------+     +------------------+
+|  MeteoGalicia       |     |  INTECMAR |     | Puertos Estado   |
+|  API v5/mgrss       |     |  Water Q  |     | Buoy Data        |
++----------+----------+     +-----+-----+     +--------+---------+
+           |                      |                    |
+           v                      v                    v
++----------+----------------------------------------------+
+|                  simulator/simulator.py                  |
+|  Fetches real APIs, falls back to realistic simulation.  |
+|  Generates WeatherAlert entities on threshold breach.    |
++----------+---------------------------+------------------+
+           |                           |
+     Direct PATCH/POST           Direct PATCH/POST
+     (all entity types)          (WeatherAlert)
+           |                           |
+           v                           v
++----------+---------------------------+------------------+
+|                   Orion-LD :1026                         |
+|             (NGSI-LD Context Broker + MongoDB)           |
++----------+---------------------------+------------------+
+           |                           |
+    Subscriptions                  REST API
+           |                           |
+           v                           v
++----------+--------+     +--------+--------+     +----------+
+| QuantumLeap :8668 |     | FastAPI :8000   |     | Ollama   |
++----------+--------+     | Backend API     |     | :11434   |
+           |              | + Static SPA    |     +----+-----+
+           v              +--------+--------+          |
++----------+--------+              |                   |
+| CrateDB :4200     |              v                   |
+| (Time Series)     |     +--------+--------+          |
++----------+--------+     | Frontend SPA    |<---------+
+           |              | Three.js globe  |
+           v              | Leaflet maps    |
++----------+--------+     | Chart.js panels |
+| Grafana :3003     |     | Chat UI         |
+| (Dashboards)      |     +-----------------+
++-------------------+
 ```
 
 ## Data Model Diagram
