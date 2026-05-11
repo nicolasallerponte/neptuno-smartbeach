@@ -99,7 +99,6 @@ const NeptunoChat = {
             avatar.className = 'message-avatar';
             avatar.setAttribute('aria-hidden', 'true');
             avatar.textContent = 'N';
-            avatar.style.cssText = 'width:32px;height:32px;border-radius:50%;width:30px;height:30px;border-radius:50%;background:#111827;display:flex;align-items:center;justify-content:center;font-family:'DM Serif Display',serif;font-style:italic;font-size:0.85rem;color:#fff;flex-shrink:0;margin-top:4px';
             wrapper.appendChild(avatar);
         }
 
@@ -176,8 +175,8 @@ const NeptunoChat = {
         const wrapper = document.createElement('div');
         wrapper.className = 'message bot';
         const avatar = document.createElement('div');
+        avatar.className = 'message-avatar';
         avatar.setAttribute('aria-hidden', 'true');
-        avatar.style.cssText = 'width:32px;height:32px;border-radius:50%;width:30px;height:30px;border-radius:50%;background:#111827;display:flex;align-items:center;justify-content:center;font-family:'DM Serif Display',serif;font-style:italic;font-size:0.85rem;color:#fff;flex-shrink:0;margin-top:4px';
         avatar.textContent = 'N';
         const bubble = document.createElement('div');
         bubble.className = 'message-content';
