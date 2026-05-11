@@ -1,4 +1,4 @@
-# NEPTUNO — Smart Coastal Intelligence
+# NEPTUNO - Smart Coastal Intelligence: Nicolás Aller Ponte y Jacobo Cousillas Taboada
 
 Plataforma de monitorización costera en tiempo real para 18 playas de A Coruña. Integra datos reales de MeteoGalicia, Puertos del Estado e INTECMAR sobre el ecosistema FIWARE con entidades NGSI-LD, series temporales, ML y un asistente IA local.
 
@@ -8,12 +8,12 @@ Plataforma de monitorización costera en tiempo real para 18 playas de A Coruña
 
 ## Requisitos
 
-| Herramienta | Versión |
-|-------------|---------|
-| Docker + Docker Compose | 24+ |
-| Python | 3.11+ |
-| uv | cualquiera — `curl -Lsf https://astral.sh/uv/install.sh \| sh` |
-| Ollama | cualquiera — https://ollama.com |
+| Herramienta             | Versión                                                        |
+| ----------------------- | -------------------------------------------------------------- |
+| Docker + Docker Compose | 24+                                                            |
+| Python                  | 3.11+                                                          |
+| uv                      | cualquiera — `curl -Lsf https://astral.sh/uv/install.sh \| sh` |
+| Ollama                  | cualquiera — https://ollama.com                                |
 
 ---
 
@@ -68,27 +68,27 @@ uv run python ml/predict.py  # genera entidades WaterQualityPredicted en Orion
 
 ## Vistas
 
-| URL | Descripción |
-|-----|-------------|
-| `http://localhost:8000` | Mapa principal con 18 playas coloreadas por estado |
-| `http://localhost:8000/#beach/<id>` | Detalle: condiciones actuales, mapa Leaflet, 4 gráficas históricas |
-| `http://localhost:8000/#chat` | Chat en lenguaje natural con Llama 3.1 (datos en tiempo real de Orion) |
-| `http://localhost:8000/#alerts` | Alertas activas (oleaje, UV, calidad del agua) |
-| `http://localhost:3003` | Grafana — dashboards de series temporales en CrateDB |
+| URL                                 | Descripción                                                            |
+| ----------------------------------- | ---------------------------------------------------------------------- |
+| `http://localhost:8000`             | Mapa principal con 18 playas coloreadas por estado                     |
+| `http://localhost:8000/#beach/<id>` | Detalle: condiciones actuales, mapa Leaflet, 4 gráficas históricas     |
+| `http://localhost:8000/#chat`       | Chat en lenguaje natural con Llama 3.1 (datos en tiempo real de Orion) |
+| `http://localhost:8000/#alerts`     | Alertas activas (oleaje, UV, calidad del agua)                         |
+| `http://localhost:3003`             | Grafana — dashboards de series temporales en CrateDB                   |
 
 ---
 
 ## Servicios Docker
 
-| Servicio | Puerto | Descripción |
-|----------|--------|-------------|
-| Orion-LD | 1026 | Context Broker NGSI-LD |
-| IoT Agent JSON | 4041 / 7896 | Protocolo IoT → NGSI-LD |
-| QuantumLeap | 8668 | Persistencia histórica vía suscripciones |
-| CrateDB | 4200 | Base de datos de series temporales |
-| MongoDB | 27017 | Almacén de entidades de Orion |
-| Grafana | 3003 | Dashboards (admin / neptuno2026) |
-| nginx (context) | 3004 | Servidor del `@context` JSON-LD |
+| Servicio        | Puerto      | Descripción                              |
+| --------------- | ----------- | ---------------------------------------- |
+| Orion-LD        | 1026        | Context Broker NGSI-LD                   |
+| IoT Agent JSON  | 4041 / 7896 | Protocolo IoT → NGSI-LD                  |
+| QuantumLeap     | 8668        | Persistencia histórica vía suscripciones |
+| CrateDB         | 4200        | Base de datos de series temporales       |
+| MongoDB         | 27017       | Almacén de entidades de Orion            |
+| Grafana         | 3003        | Dashboards (admin / neptuno2026)         |
+| nginx (context) | 3004        | Servidor del `@context` JSON-LD          |
 
 ---
 
