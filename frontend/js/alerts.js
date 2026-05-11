@@ -70,9 +70,9 @@ const NeptunoAlerts = {
         listEl.innerHTML = alerts.map(alert => this._renderAlertCard(alert)).join('');
     },
 
-    _sourceClass(src) {
-        const map = { MLModel: 'ml', IoTSensor: 'iot', CVSystem: 'cv', Citizen: 'citizen' };
-        return map[src] || 'iot';
+    _sourceLabel(src) {
+        const map = { MLModel: 'Modelo ML', IoTSensor: 'Sensor IoT', CVSystem: 'Sistema CV', Citizen: 'Ciudadano' };
+        return map[src] || src;
     },
 
     _renderAlertCard(alert) {
@@ -83,21 +83,23 @@ const NeptunoAlerts = {
         const dateIssued = alert.dateIssued || '';
         const beach = (alert.refPointOfInterest || '').split(':').pop();
 
-        const formattedDate = dateIssued ? new Date(dateIssued).toLocaleString('es-ES') : '';
-        const srcClass = this._sourceClass(source);
+        const severityLabel = { low: 'Bajo', medium: 'Medio', high: 'Alto' }[severity] || severity;
+        const formattedDate = dateIssued
+            ? new Date(dateIssued).toLocaleString('es-ES', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })
+            : '';
+
+        const metaParts = [this._escapeHtml(this._sourceLabel(source))];
+        if (beach) metaParts.push(this._escapeHtml(beach));
+        if (formattedDate) metaParts.push(formattedDate);
 
         return `
             <div class="alert-card severity-${severity}">
                 <div class="alert-card-top">
                     <div class="alert-card-title">${this._escapeHtml(name)}</div>
-                    <span class="severity-tag ${severity}">${severity.toUpperCase()}</span>
+                    <span class="alert-level ${severity}">${severityLabel}</span>
                 </div>
                 <div class="alert-card-description">${this._escapeHtml(description)}</div>
-                <div class="alert-card-meta">
-                    <span class="source-tag ${srcClass}">${source}</span>
-                    ${beach ? `<span style="color:var(--text-secondary)">📍 ${this._escapeHtml(beach)}</span>` : ''}
-                    ${formattedDate ? `<span style="color:var(--text-muted)">${formattedDate}</span>` : ''}
-                </div>
+                <div class="alert-card-meta">${metaParts.join(' · ')}</div>
             </div>
         `;
     },
