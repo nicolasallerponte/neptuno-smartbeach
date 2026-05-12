@@ -402,15 +402,14 @@ const NeptunoApp = {
         const loadSnapshot = () => {
             if (!img) return;
             img.classList.add('loading');
-            img.onload = () => img.classList.remove('loading');
+            img.onload = () => { img.classList.remove('loading'); panel.style.display = ''; };
             img.onerror = () => { panel.style.display = 'none'; };
-            img.src = data.snapshot_url + '?t=' + Date.now();
+            img.src = `/api/beaches/${beachId}/webcam/snapshot?t=` + Date.now();
         };
 
         if (refreshBtn) refreshBtn.addEventListener('click', loadSnapshot);
 
         loadSnapshot();
-        panel.style.display = '';
 
         // Auto-refresh every 5 minutes
         this._webcamInterval = setInterval(loadSnapshot, 5 * 60 * 1000);
