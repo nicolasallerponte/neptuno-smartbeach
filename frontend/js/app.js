@@ -376,6 +376,35 @@ const NeptunoApp = {
         }
 
         if (typeof NeptunoCharts !== 'undefined') NeptunoCharts.loadAll(beachId, weather, sea);
+
+        // Webcam panel
+        this._loadWebcam(beachId);
+    },
+
+    async _loadWebcam(beachId) {
+        const panel = document.getElementById('webcam-panel');
+        if (!panel) return;
+        panel.style.display = 'none';
+
+        const data = await this.fetchJSON(`/api/beaches/${beachId}/webcam`);
+        if (!data || !data.available) return;
+
+        const img = document.getElementById('webcam-img');
+        const titleEl = document.getElementById('webcam-title');
+        const link = document.getElementById('webcam-windy-link');
+
+        if (titleEl) titleEl.textContent = data.title || '';
+        if (link) link.href = data.player_url || '#';
+
+        if (img) {
+            img.classList.add('loading');
+            img.onload = () => img.classList.remove('loading');
+            img.onerror = () => { panel.style.display = 'none'; };
+            // Add timestamp to bypass browser cache on each visit
+            img.src = data.snapshot_url + '?t=' + Date.now();
+        }
+
+        panel.style.display = '';
     },
 
     _colorCard(cardId, value, warnThresh, dangerThresh) {

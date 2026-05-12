@@ -45,6 +45,8 @@ from simulator.meteo_fetcher import (  # noqa: E402
     simulated_water_quality,
 )
 from data.fetch_real_data import fetch_puertos_sea_state  # noqa: E402
+from data.webcams import get_webcam  # noqa: E402
+from cv.detector import detect_occupancy_from_url  # noqa: E402
 # send_iot_data kept for potential future IoT Agent use
 
 logger = logging.getLogger("neptuno.simulator")
@@ -386,6 +388,58 @@ async def update_water_quality(client: httpx.AsyncClient, b: BeachInfo) -> None:
         await delete_orion_entity(client, alert_id)
 
 
+async def update_occupation_cv(client: httpx.AsyncClient, b: BeachInfo) -> None:
+    """Update Beach occupationRate using Windy webcam snapshot + YOLOv11.
+
+    For beaches without a webcam, skips silently (occupation stays as-is).
+    """
+    cam = get_webcam(b.id)
+    if not cam:
+        return
+
+    # Run detection in a thread to avoid blocking the event loop
+    loop = asyncio.get_event_loop()
+    result = await loop.run_in_executor(
+        None, detect_occupancy_from_url, cam["snapshot_url"]
+    )
+
+    source = "REAL (Windy webcam)" if not result.is_simulated else "SIMULATED"
+    logger.info("CV %s — %s: %d people → %s", source, b.id, result.person_count, result.occupation_rate)
+
+    now = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+    patch_url = f"{ORION_URL}/ngsi-ld/v1/entities/{b.urn}/attrs"
+    payload = {
+        "occupationRate": {"type": "Property", "value": result.occupation_rate},
+        "personCount": {"type": "Property", "value": result.person_count},
+        "@context": CONTEXT_URL,
+    }
+    try:
+        resp = await client.patch(patch_url, json=payload, headers=HEADERS_LD)
+        if resp.status_code not in (204, 207):
+            logger.warning("Failed to update occupation for %s: %s", b.id, resp.status_code)
+    except Exception as exc:
+        logger.error("CV occupation update failed for %s: %s", b.id, exc)
+
+    # Crowding alert
+    alert_id = f"urn:ngsi-ld:WeatherAlert:{b.id}-crowding"
+    if result.occupation_rate in ("high", "veryHigh"):
+        sev = "high" if result.occupation_rate == "veryHigh" else "medium"
+        await upsert_orion_entity(client, {
+            "id": alert_id, "type": "WeatherAlert",
+            "name": {"type": "Property", "value": f"Alta afluencia en {b.name}"},
+            "dateIssued": {"type": "Property", "value": now},
+            "validFrom": {"type": "Property", "value": now},
+            "alertSource": {"type": "Property", "value": "CVSystem"},
+            "category": {"type": "Property", "value": "crowding"},
+            "severity": {"type": "Property", "value": sev},
+            "description": {"type": "Property", "value": f"Se detectan ~{result.person_count} personas. Ocupación: {result.occupation_rate}."},
+            "refPointOfInterest": {"type": "Relationship", "object": b.urn},
+            "@context": CONTEXT_URL,
+        })
+    else:
+        await delete_orion_entity(client, alert_id)
+
+
 # ---------------------------------------------------------------------------
 # Main simulation loop
 # ---------------------------------------------------------------------------
@@ -432,6 +486,10 @@ async def run_cycle(
             await update_water_quality(client, b)
         new_last_wq = now
         logger.info("Water quality updated (%d beaches)", len(BEACHES))
+
+    # CV occupancy detection via Windy webcam snapshots (every sea cycle)
+    for b in BEACHES:
+        await update_occupation_cv(client, b)
 
     logger.info("Cycle %d complete for %d beaches", cycle, len(BEACHES))
     return new_last_weather, new_last_forecast, new_last_wq, new_maritime

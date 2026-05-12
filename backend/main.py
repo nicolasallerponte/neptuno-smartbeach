@@ -44,12 +44,14 @@ from backend.routers.beaches import router as beaches_router  # noqa: E402
 from backend.routers.chat import router as chat_router  # noqa: E402
 from backend.routers.history import router as history_router  # noqa: E402
 from backend.routers.predictions import router as predictions_router  # noqa: E402
+from backend.routers.webcams import router as webcams_router  # noqa: E402
 
 app.include_router(beaches_router, prefix="/api")
 app.include_router(history_router, prefix="/api")
 app.include_router(predictions_router, prefix="/api")
 app.include_router(alerts_router, prefix="/api")
 app.include_router(chat_router, prefix="/api")
+app.include_router(webcams_router, prefix="/api")
 
 
 @app.get("/api/health")

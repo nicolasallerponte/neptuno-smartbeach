@@ -10,7 +10,9 @@ Falls back to simulated detections when no ONNX model is available.
 
 from __future__ import annotations
 
+import io
 import logging
+import urllib.request
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -225,6 +227,58 @@ def detect_occupancy(image_path: str | Path | None = None) -> OccupancyResult:
         return OccupancyResult(
             person_count=0,
             occupation_rate="low",
+            detections=[],
+            is_simulated=True,
+        )
+
+
+def detect_occupancy_from_url(snapshot_url: str) -> OccupancyResult:
+    """Fetch a Windy webcam snapshot and run occupancy detection on it.
+
+    Downloads the image into memory (no disk I/O) and passes it to
+    detect_occupancy. Falls back to simulation if download fails.
+    """
+    try:
+        req = urllib.request.Request(
+            snapshot_url,
+            headers={"User-Agent": "NEPTUNO-SmartBeach/1.0"},
+        )
+        with urllib.request.urlopen(req, timeout=10) as resp:
+            img_bytes = resp.read()
+
+        img = Image.open(io.BytesIO(img_bytes)).convert("RGB")
+        session = load_onnx_session()
+
+        if session is None:
+            import random
+            count = random.randint(0, 60)
+            logger.info("SIMULATED (no model) from URL %s: %d people", snapshot_url, count)
+            return OccupancyResult(
+                person_count=count,
+                occupation_rate=classify_occupation(count),
+                detections=[],
+                is_simulated=True,
+            )
+
+        input_tensor = preprocess_image(img)
+        input_name = session.get_inputs()[0].name
+        outputs = session.run(None, {input_name: input_tensor})
+        dets = postprocess_detections(outputs[0], img.width, img.height)
+        count = len(dets)
+        logger.info("REAL detection from Windy snapshot: %d people", count)
+        return OccupancyResult(
+            person_count=count,
+            occupation_rate=classify_occupation(count),
+            detections=dets,
+            is_simulated=False,
+        )
+    except Exception as exc:
+        logger.warning("Webcam detection failed (%s), falling back to simulation", exc)
+        import random
+        count = random.randint(0, 60)
+        return OccupancyResult(
+            person_count=count,
+            occupation_rate=classify_occupation(count),
             detections=[],
             is_simulated=True,
         )
