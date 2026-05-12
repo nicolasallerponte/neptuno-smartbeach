@@ -2,7 +2,7 @@
 
 ## Objective
 
-NEPTUNO is a smart coastal monitoring platform that provides real-time environmental intelligence for 12 beaches along the province of A Coruna, Galicia, Spain. The system collects, processes, and visualizes meteorological, oceanographic, and water quality data using the FIWARE ecosystem, enabling beachgoers, local authorities, and environmental managers to make informed decisions about beach safety and environmental conditions.
+NEPTUNO is a smart coastal monitoring platform that provides real-time environmental intelligence for 18 beaches along the province of A Coruna, Galicia, Spain. The system collects, processes, and visualizes meteorological, oceanographic, and water quality data using the FIWARE ecosystem, enabling beachgoers, local authorities, and environmental managers to make informed decisions about beach safety and environmental conditions.
 
 ## State of the Art
 
@@ -11,10 +11,10 @@ Coastal monitoring has traditionally relied on manual measurements and periodic 
 ## Main Features
 
 1. **Real-time Monitoring** - Continuous data collection from meteorological stations, oceanographic buoys, and water quality sensors (real APIs + simulated fallback)
-2. **3D Globe Visualization** - Interactive Three.js globe showing all 12 beaches with color-coded status indicators
+2. **3D Globe Visualization** - Interactive Three.js globe showing all 18 beaches with color-coded status indicators
 3. **Beach Detail Dashboard** - Per-beach view with Leaflet maps, Chart.js time series, and current condition metrics
 4. **AI Assistant** - Ollama-powered LLM chat with real-time beach context injection from Orion-LD
-5. **Automated Alerts** - ML and CV-generated safety alerts for dangerous conditions (high waves, poor water quality, crowding)
+5. **Automated Alerts** - ML and CV-generated safety alerts for dangerous conditions (high waves, poor water quality, crowding). Redesigned with a typography-driven hierarchy for maximum clarity.
 6. **Historical Analytics** - Grafana dashboards connected to CrateDB for time-series analysis
 7. **Water Quality Prediction** - Gradient Boosting ML models predicting E. coli levels and bathing water classification
 8. **Computer Vision** - YOLOv11 ONNX person detection for beach occupancy estimation

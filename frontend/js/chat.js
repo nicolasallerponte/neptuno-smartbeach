@@ -96,6 +96,8 @@ const NeptunoChat = {
 
         if (role === 'bot') {
             const avatar = document.createElement('div');
+            // FIX: Use existing CSS class instead of problematic inline style.cssText
+            // to avoid SyntaxErrors from nested quotes and keep styling maintainable.
             avatar.className = 'message-avatar';
             avatar.setAttribute('aria-hidden', 'true');
             avatar.textContent = 'N';
@@ -175,6 +177,7 @@ const NeptunoChat = {
         const wrapper = document.createElement('div');
         wrapper.className = 'message bot';
         const avatar = document.createElement('div');
+        // FIX: Ensure the correct CSS class is applied and avoid inline styles.
         avatar.className = 'message-avatar';
         avatar.setAttribute('aria-hidden', 'true');
         avatar.textContent = 'N';

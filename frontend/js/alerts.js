@@ -88,18 +88,17 @@ const NeptunoAlerts = {
             ? new Date(dateIssued).toLocaleString('es-ES', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })
             : '';
 
-        const metaParts = [this._escapeHtml(this._sourceLabel(source))];
-        if (beach) metaParts.push(this._escapeHtml(beach));
-        if (formattedDate) metaParts.push(formattedDate);
+        const sourceLabel = this._sourceLabel(source);
+        const metaLine = [sourceLabel, beach, formattedDate].filter(Boolean).join(' · ');
 
         return `
             <div class="alert-card severity-${severity}">
                 <div class="alert-card-top">
                     <div class="alert-card-title">${this._escapeHtml(name)}</div>
-                    <span class="alert-level ${severity}">${severityLabel}</span>
+                    <span class="alert-level ${severity}">${severityLabel.toUpperCase()}</span>
                 </div>
                 <div class="alert-card-description">${this._escapeHtml(description)}</div>
-                <div class="alert-card-meta">${metaParts.join(' · ')}</div>
+                <div class="alert-card-meta">${this._escapeHtml(metaLine)}</div>
             </div>
         `;
     },

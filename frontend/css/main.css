@@ -118,7 +118,7 @@ body{
 .alert-badge{
     display:inline-grid;place-items:center;
     min-width:17px;height:17px;padding:0 4px;background:var(--crimson);
-    color:#fff;font-size:.55rem;font-weight:700;line-height:1;
+    color:#fff;font-size:.62rem;font-weight:700;line-height:1;
     border-radius:9px;margin-left:6px;letter-spacing:0;vertical-align:middle;
 }
 .nav-status{
@@ -515,7 +515,7 @@ body{
 .alert-card{
     background:var(--white);border:1px solid var(--rule);
     border-left:3px solid;border-radius:var(--r);
-    padding:14px 18px;animation:slideIn .2s ease;
+    padding:16px 20px;animation:slideIn .2s ease;
     transition:box-shadow .15s;
 }
 .alert-card:hover{box-shadow:var(--s2)}
@@ -523,22 +523,20 @@ body{
 .alert-card.severity-medium{border-left-color:var(--amber)}
 .alert-card.severity-high{border-left-color:var(--crimson)}
 .alert-card-top{
-    display:flex;align-items:center;justify-content:space-between;
-    gap:12px;margin-bottom:6px;flex-wrap:wrap;
+    display:flex;align-items:baseline;justify-content:space-between;
+    gap:12px;margin-bottom:8px;
 }
 .alert-card-title{
     font-family:'Cormorant Garant',serif;font-size:1.05rem;font-weight:600;
     color:var(--ink);letter-spacing:.01em;
 }
-.alert-badges{display:flex;gap:6px;flex-wrap:wrap;align-items:center;flex-shrink:0}
 .alert-card-description{font-size:.82rem;color:var(--ink-2);line-height:1.6}
 .alert-card-meta{
-    font-size:.69rem;color:var(--ink-4);margin-top:10px;
-    padding-top:8px;border-top:1px solid var(--rule);
+    font-size:.68rem;color:var(--ink-4);margin-top:12px;
     letter-spacing:.02em;
 }
 .alert-level{
-    font-size:.62rem;font-weight:700;letter-spacing:.1em;
+    font-size:.65rem;font-weight:600;letter-spacing:.12em;
     text-transform:uppercase;flex-shrink:0;
 }
 .alert-level.low{color:var(--emerald)}

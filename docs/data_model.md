@@ -53,7 +53,7 @@ NEPTUNO uses 10 NGSI-LD entity types from official FIWARE Smart Data Models. All
 
 **Source:** `dataModel.PointOfInterest`
 **Created:** Once at initialization
-**Count:** 12 (one per beach)
+**Count:** 18 (one per beach)
 **ID Pattern:** `urn:ngsi-ld:PointOfInterest:{beachId}`
 
 | Attribute | NGSI-LD Type | Data Type | Example | Static/Dynamic |
@@ -70,7 +70,7 @@ NEPTUNO uses 10 NGSI-LD entity types from official FIWARE Smart Data Models. All
 
 **Source:** `dataModel.PointOfInterest`
 **Created:** Once at initialization
-**Count:** 12
+**Count:** 18
 **ID Pattern:** `urn:ngsi-ld:Beach:{beachId}`
 
 | Attribute | NGSI-LD Type | Data Type | Unit | Example | Static/Dynamic |
@@ -117,7 +117,7 @@ NEPTUNO uses 10 NGSI-LD entity types from official FIWARE Smart Data Models. All
 **Source:** `dataModel.Weather`
 **Update Frequency:** Every 10 minutes
 **Data Path:** Simulator -> Orion (direct PATCH)
-**Count:** 12
+**Count:** 18
 **ID Pattern:** `urn:ngsi-ld:SeaConditions:{beachId}`
 
 | Attribute | NGSI-LD Type | Data Type | Unit | Example | Source |
@@ -143,7 +143,7 @@ NEPTUNO uses 10 NGSI-LD entity types from official FIWARE Smart Data Models. All
 **Source:** `dataModel.Weather`
 **Update Frequency:** Every hour
 **Data Path:** MeteoGalicia API -> Simulator -> Orion (direct PATCH)
-**Count:** 12
+**Count:** 18
 **ID Pattern:** `urn:ngsi-ld:WeatherObserved:{beachId}`
 
 | Attribute | NGSI-LD Type | Data Type | Unit | Example | Source |
@@ -176,7 +176,7 @@ NEPTUNO uses 10 NGSI-LD entity types from official FIWARE Smart Data Models. All
 **Source:** `dataModel.Weather`
 **Update Frequency:** Every 6 hours
 **Data Path:** MeteoGalicia API -> Simulator -> Orion (direct PATCH)
-**Count:** 12
+**Count:** 18
 **ID Pattern:** `urn:ngsi-ld:WeatherForecast:{beachId}`
 
 | Attribute | NGSI-LD Type | Data Type | Unit | Example | Source |
@@ -214,7 +214,7 @@ NEPTUNO uses 10 NGSI-LD entity types from official FIWARE Smart Data Models. All
 | dateIssued | Property | DateTime | "2026-04-21T16:00:00Z" | Generated |
 | validFrom | Property | DateTime | "2026-04-21T16:00:00Z" | Generated |
 | validTo | Property | DateTime | "2026-04-21T20:00:00Z" | ML/CV only |
-| alertSource | Property | String | "IoTSensor" / "MLModel" / "CVSystem" | System |
+| alertSource | Property | String | "IoTSensor" / "MLModel" / "CVSystem" / "Citizen" | System |
 | category | Property | String | "highWaves" / "poorWaterQuality" / "highUVIndex" / "crowding" | System |
 | severity | Property | String | "medium" / "high" | Threshold-based |
 | description | Property | String | "Altura de ola: 2.1 m..." | Generated |
@@ -235,7 +235,7 @@ NEPTUNO uses 10 NGSI-LD entity types from official FIWARE Smart Data Models. All
 **Source:** `dataModel.WaterQuality`
 **Update Frequency:** Twice daily (every 12 hours)
 **Data Path:** Simulator -> IoT Agent -> Orion
-**Count:** 12
+**Count:** 18
 **ID Pattern:** `urn:ngsi-ld:WaterQualityObserved:{beachId}`
 
 | Attribute | NGSI-LD Type | Data Type | Unit | Example | Source |
@@ -259,7 +259,7 @@ NEPTUNO uses 10 NGSI-LD entity types from official FIWARE Smart Data Models. All
 **Source:** `dataModel.WaterQuality`
 **Update Frequency:** Every 6 hours (ML model output)
 **Data Path:** ML predict.py -> Orion (direct POST)
-**Count:** 12
+**Count:** 18
 **ID Pattern:** `urn:ngsi-ld:WaterQualityPredicted:{beachId}`
 
 | Attribute | NGSI-LD Type | Data Type | Unit | Example | Source |
