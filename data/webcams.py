@@ -16,17 +16,17 @@ import os
 
 WINDY_API_KEY = os.getenv("WINDY_API_KEY", "")
 
-# Mapping beach_id → Windy webcam metadata
-# cam_id discovered via GET /api/v3/webcams?nearby={lat},{lon},10
+# Mapping beach_id → Windy webcam metadata.
+# Only includes cameras that actually face the relevant beach or bay.
+# cam_id verified manually against Windy snapshot content.
 WEBCAM_MAP: dict[str, dict] = {
-    "Riazor":        {"cam_id": 1668786166, "title": "Torre de Hércules · Orzán · Domus"},
-    "Orzan":         {"cam_id": 1280757387, "title": "Orzán Beach · Torre de Hércules"},
-    "SantaCristina": {"cam_id": 1280757387, "title": "Orzán Beach · Torre de Hércules"},
-    "Bastiagueiro":  {"cam_id": 1280757387, "title": "Orzán Beach · Torre de Hércules"},
-    "Sabon":         {"cam_id": 1668786166, "title": "Torre de Hércules · Orzán · Domus"},
-    "Mino":          {"cam_id": 1344675159, "title": "Praia de Redes · Ría de Ares"},
-    "Cabanas":       {"cam_id": 1344675159, "title": "Praia de Redes · Ría de Ares"},
-    "Doninos":       {"cam_id": 1683292037, "title": "Ares · Ría de Ares"},
+    # A Coruña urban beaches — two distinct cameras of the same bay
+    "Riazor": {"cam_id": 1668786166, "title": "Torre de Hércules · Orzán"},
+    "Orzan":  {"cam_id": 1280757387, "title": "Orzán Beach"},
+    # Ares estuary — cameras facing the ría, valid for nearby beaches
+    "Mino":    {"cam_id": 1344675159, "title": "Praia de Redes · Ría de Ares"},
+    "Cabanas": {"cam_id": 1344675159, "title": "Praia de Redes · Ría de Ares"},
+    "Doninos": {"cam_id": 1683292037, "title": "Ares · Ría de Ares"},
 }
 
 

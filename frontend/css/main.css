@@ -628,17 +628,13 @@ canvas { cursor: crosshair; }
 }
 .webcam-frame{
     position:relative;width:100%;
-    background:#111;overflow:hidden;
-    display:flex;align-items:center;justify-content:center;
-    /* 4:3 aspect ratio to match the 640×480 Windy snapshots */
-    aspect-ratio:4/3;
-    max-height:420px;
+    overflow:hidden;background:#0a0a0a;
+    height:280px;
 }
 .webcam-img{
     width:100%;height:100%;
-    object-fit:contain;
+    object-fit:cover;object-position:center;
     display:block;transition:opacity .3s;
-    image-rendering:auto;
 }
 .webcam-img.loading{opacity:.35}
 .webcam-live-badge{
