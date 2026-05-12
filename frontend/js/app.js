@@ -10,6 +10,7 @@ const NeptunoApp = {
     currentBeach: null,
     alertCount: 0,
     _healthInterval: null,
+    _webcamInterval: null,
 
     // ---- API helpers ----
     async fetchJSON(url) {
@@ -385,6 +386,7 @@ const NeptunoApp = {
         const panel = document.getElementById('webcam-panel');
         if (!panel) return;
         panel.style.display = 'none';
+        if (this._webcamInterval) { clearInterval(this._webcamInterval); this._webcamInterval = null; }
 
         const data = await this.fetchJSON(`/api/beaches/${beachId}/webcam`);
         if (!data || !data.available) return;
@@ -392,19 +394,26 @@ const NeptunoApp = {
         const img = document.getElementById('webcam-img');
         const titleEl = document.getElementById('webcam-title');
         const link = document.getElementById('webcam-windy-link');
+        const refreshBtn = document.getElementById('webcam-refresh');
 
         if (titleEl) titleEl.textContent = data.title || '';
         if (link) link.href = data.player_url || '#';
 
-        if (img) {
+        const loadSnapshot = () => {
+            if (!img) return;
             img.classList.add('loading');
             img.onload = () => img.classList.remove('loading');
             img.onerror = () => { panel.style.display = 'none'; };
-            // Add timestamp to bypass browser cache on each visit
             img.src = data.snapshot_url + '?t=' + Date.now();
-        }
+        };
 
+        if (refreshBtn) refreshBtn.addEventListener('click', loadSnapshot);
+
+        loadSnapshot();
         panel.style.display = '';
+
+        // Auto-refresh every 5 minutes
+        this._webcamInterval = setInterval(loadSnapshot, 5 * 60 * 1000);
     },
 
     _colorCard(cardId, value, warnThresh, dangerThresh) {

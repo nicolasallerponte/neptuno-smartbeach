@@ -31,8 +31,11 @@ WEBCAM_MAP: dict[str, dict] = {
 
 
 def snapshot_url(cam_id: int) -> str:
-    """Return the public Windy snapshot JPEG URL for a camera."""
-    return f"https://imgproxy.windy.com/_/preview/plain/current/{cam_id}/original.jpg"
+    """Return the public Windy snapshot JPEG URL for a camera.
+
+    'full' gives 640×480 vs 400×224 for 'preview'.
+    """
+    return f"https://imgproxy.windy.com/_/full/plain/current/{cam_id}/original.jpg"
 
 
 def windy_player_url(cam_id: int) -> str:

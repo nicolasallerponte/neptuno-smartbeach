@@ -628,17 +628,30 @@ canvas { cursor: crosshair; }
 }
 .webcam-frame{
     position:relative;width:100%;
-    background:#000;overflow:hidden;
-    max-height:320px;display:flex;align-items:center;justify-content:center;
+    background:#111;overflow:hidden;
+    display:flex;align-items:center;justify-content:center;
+    /* 4:3 aspect ratio to match the 640×480 Windy snapshots */
+    aspect-ratio:4/3;
+    max-height:420px;
 }
 .webcam-img{
-    width:100%;max-height:320px;object-fit:cover;
+    width:100%;height:100%;
+    object-fit:contain;
     display:block;transition:opacity .3s;
+    image-rendering:auto;
 }
-.webcam-img.loading{opacity:.4}
+.webcam-img.loading{opacity:.35}
 .webcam-live-badge{
     position:absolute;top:10px;left:10px;
     background:var(--crimson);color:#fff;
     font-size:.6rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;
     padding:3px 8px;border-radius:4px;
 }
+.webcam-refresh-btn{
+    position:absolute;bottom:10px;right:10px;
+    background:rgba(0,0,0,.55);color:rgba(255,255,255,.85);
+    border:1px solid rgba(255,255,255,.2);border-radius:var(--r-s);
+    font-size:.68rem;padding:4px 10px;cursor:pointer;
+    transition:background .15s;font-family:inherit;
+}
+.webcam-refresh-btn:hover{background:rgba(0,0,0,.8)}
