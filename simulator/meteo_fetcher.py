@@ -379,15 +379,41 @@ def simulated_sea_conditions(beach_lat: float) -> dict[str, Any]:
     }
 
 
+def _seasonal_water_temp(month: int) -> float:
+    """Mean SST for Galician Atlantic coast by month (°C)."""
+    # Based on Copernicus/EMODnet climatology for NW Iberian shelf
+    sst = [13.0, 12.5, 12.5, 13.5, 15.0, 17.0, 18.5, 19.5, 19.0, 17.5, 15.5, 13.5]
+    return sst[month - 1]
+
+
+def _ecoli_season_range(month: int) -> tuple[int, int]:
+    """Typical E. coli range (UFC/100ml) by season for Galician beaches.
+
+    Values are low year-round due to good Atlantic flushing, but peak
+    slightly in summer (Jul–Aug) from increased bather load.
+    """
+    if month in (7, 8):          # peak summer
+        return (10, 120)
+    elif month in (6, 9):        # shoulder
+        return (5, 80)
+    else:                        # rest of year (bathing season not active)
+        return (2, 40)
+
+
 def simulated_water_quality() -> dict[str, Any]:
-    """Realistic simulated water quality readings."""
-    logger.info("SIMULATED water quality generated")
+    """Season-aware simulated water quality readings."""
+    month = datetime.now(timezone.utc).month
+    sst = _seasonal_water_temp(month)
+    ecoli_lo, ecoli_hi = _ecoli_season_range(month)
+    # Dissolved oxygen is inversely related to temperature
+    do = round(random.uniform(7.5, 9.5) - (sst - 15.0) * 0.1, 1)
+    logger.info("SIMULATED water quality generated (month=%d)", month)
     return {
-        "temperature": round(random.uniform(14.0, 19.0), 1),
-        "pH": round(random.uniform(7.8, 8.4), 2),
+        "temperature": round(sst + random.uniform(-0.8, 0.8), 1),
+        "pH": round(random.uniform(7.9, 8.3), 2),
         "conductivity": round(random.uniform(40.0, 55.0), 1),
-        "turbidity": round(random.uniform(0.5, 5.0), 1),
-        "dissolvedOxygen": round(random.uniform(7.0, 10.0), 1),
-        "escherichiaColi": random.randint(10, 200),
-        "intestinalEnterococci": random.randint(5, 80),
+        "turbidity": round(random.uniform(0.3, 3.0), 1),
+        "dissolvedOxygen": max(6.0, do),
+        "escherichiaColi": random.randint(ecoli_lo, ecoli_hi),
+        "intestinalEnterococci": random.randint(max(2, ecoli_lo // 2), max(10, ecoli_hi // 2)),
     }

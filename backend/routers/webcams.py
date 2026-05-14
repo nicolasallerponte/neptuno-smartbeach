@@ -13,7 +13,7 @@ router = APIRouter(tags=["webcams"])
 
 @router.get("/beaches/{beach_id}/webcam")
 async def get_beach_webcam(beach_id: str) -> dict:
-    """Return webcam snapshot info for a beach, if available."""
+    """Return webcam info for a beach (hls_url + snapshot_url), if available."""
     info = get_webcam(beach_id)
     if not info:
         return {"available": False}

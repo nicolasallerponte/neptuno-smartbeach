@@ -11,6 +11,7 @@ const NeptunoApp = {
     alertCount: 0,
     _healthInterval: null,
     _webcamInterval: null,
+    _hlsInstance: null,
 
     // ---- API helpers ----
     async fetchJSON(url) {
@@ -238,8 +239,10 @@ const NeptunoApp = {
         const badge = document.getElementById('beach-status-badge');
         if (badge) { badge.className = 'beach-status-badge'; badge.textContent = ''; }
         ['val-temp','val-waves','val-wind','val-water','val-uv','val-occupation',
-         'val-water-temp','val-pressure','val-gust','val-bath']
+         'val-water-temp','val-pressure','val-gust','val-bath','val-tide']
             .forEach(id => { const el = document.getElementById(id); if (el) el.textContent = '--'; });
+        const tideArrowEl = document.getElementById('val-tide-arrow');
+        if (tideArrowEl) tideArrowEl.textContent = '';
 
         const detail = await this.fetchJSON(`/api/beaches/${beachId}`);
         if (!detail) {
@@ -378,8 +381,38 @@ const NeptunoApp = {
 
         if (typeof NeptunoCharts !== 'undefined') NeptunoCharts.loadAll(beachId, weather, sea);
 
+        // Tide card
+        this._loadTide(beachId);
+
         // Webcam panel
         this._loadWebcam(beachId);
+    },
+
+    async _loadTide(beachId) {
+        const data = await this.fetchJSON(`/api/beaches/${beachId}/tide`);
+        if (!data) return;
+
+        const tideEl = document.getElementById('val-tide');
+        const arrowEl = document.getElementById('val-tide-arrow');
+        if (tideEl) tideEl.textContent = data.height != null ? data.height.toFixed(1) : '--';
+        if (arrowEl) arrowEl.textContent = data.trend_arrow || '';
+
+        // Next extreme in maritime-info row
+        const rowTide = document.getElementById('row-tide-next');
+        if (rowTide && data.next_extreme && data.next_extreme.type_es) {
+            const nx = data.next_extreme;
+            const mins = nx.minutes_away;
+            const timeLabel = mins < 60
+                ? `en ${mins} min`
+                : `en ${Math.round(mins / 60)}h ${mins % 60 ? (mins % 60) + 'min' : ''}`;
+            rowTide.innerHTML =
+                `<span class="maritime-label">Marea:</span> ` +
+                `${data.trend_arrow} ${this._esc(data.trend_es)} — ` +
+                `${this._esc(nx.type_es)} ${nx.time} (${this._esc(timeLabel)}, ${nx.height} m)`;
+            // Make sure maritime-info is visible
+            const maritime = document.getElementById('maritime-info');
+            if (maritime) maritime.style.display = '';
+        }
     },
 
     async _loadWebcam(beachId) {
@@ -387,32 +420,70 @@ const NeptunoApp = {
         if (!panel) return;
         panel.style.display = 'none';
         if (this._webcamInterval) { clearInterval(this._webcamInterval); this._webcamInterval = null; }
+        if (this._hlsInstance) { this._hlsInstance.destroy(); this._hlsInstance = null; }
 
         const data = await this.fetchJSON(`/api/beaches/${beachId}/webcam`);
         if (!data || !data.available) return;
 
         const img = document.getElementById('webcam-img');
+        const video = document.getElementById('webcam-video');
         const titleEl = document.getElementById('webcam-title');
         const link = document.getElementById('webcam-windy-link');
         const refreshBtn = document.getElementById('webcam-refresh');
 
         if (titleEl) titleEl.textContent = data.title || '';
-        if (link) link.href = data.player_url || '#';
+        if (link) {
+            link.href = data.player_url || '#';
+            link.textContent = data.provider === 'Windy' ? 'Ver en Windy' : 'Ver en directo';
+        }
 
-        const loadSnapshot = () => {
-            if (!img) return;
-            img.classList.add('loading');
-            img.onload = () => { img.classList.remove('loading'); panel.style.display = ''; };
-            img.onerror = () => { panel.style.display = 'none'; };
-            img.src = `/api/beaches/${beachId}/webcam/snapshot?t=` + Date.now();
-        };
+        if (data.hls_url && video) {
+            // Live HLS video (Camaramar)
+            if (img) img.style.display = 'none';
+            video.style.display = 'block';
 
-        if (refreshBtn) refreshBtn.addEventListener('click', loadSnapshot);
+            const initHls = () => {
+                if (this._hlsInstance) { this._hlsInstance.destroy(); this._hlsInstance = null; }
+                if (typeof Hls !== 'undefined' && Hls.isSupported()) {
+                    const hls = new Hls({ enableWorker: true });
+                    this._hlsInstance = hls;
+                    hls.loadSource(data.hls_url);
+                    hls.attachMedia(video);
+                    hls.on(Hls.Events.MANIFEST_PARSED, () => {
+                        video.play().catch(() => {});
+                        panel.style.display = '';
+                    });
+                    hls.on(Hls.Events.ERROR, (_, err) => {
+                        if (err.fatal) { hls.destroy(); this._hlsInstance = null; panel.style.display = 'none'; }
+                    });
+                } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
+                    // Native HLS (Safari)
+                    video.src = data.hls_url;
+                    video.onloadedmetadata = () => { video.play().catch(() => {}); panel.style.display = ''; };
+                    video.onerror = () => { panel.style.display = 'none'; };
+                } else {
+                    panel.style.display = 'none';
+                }
+            };
 
-        loadSnapshot();
+            if (refreshBtn) refreshBtn.addEventListener('click', initHls);
+            initHls();
+        } else if (img) {
+            // JPEG snapshot fallback (Windy)
+            video.style.display = 'none';
+            img.style.display = 'block';
 
-        // Auto-refresh every 5 minutes
-        this._webcamInterval = setInterval(loadSnapshot, 5 * 60 * 1000);
+            const loadSnapshot = () => {
+                img.classList.add('loading');
+                img.onload = () => { img.classList.remove('loading'); panel.style.display = ''; };
+                img.onerror = () => { panel.style.display = 'none'; };
+                img.src = `/api/beaches/${beachId}/webcam/snapshot?t=` + Date.now();
+            };
+
+            if (refreshBtn) refreshBtn.addEventListener('click', loadSnapshot);
+            loadSnapshot();
+            this._webcamInterval = setInterval(loadSnapshot, 5 * 60 * 1000);
+        }
     },
 
     _colorCard(cardId, value, warnThresh, dangerThresh) {

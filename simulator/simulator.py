@@ -4,9 +4,9 @@ Main sensor data simulator.
 Runs a continuous loop that, for every beach:
   1. Fetches real data from MeteoGalicia / MeteoSIX / maritime prediction
   2. Falls back to realistic simulated values when APIs are unavailable
-  3. Sends buoy readings (SeaConditions) through the IoT Agent HTTP endpoint
-  4. Sends water quality readings (WaterQualityObserved) through the IoT Agent
-  5. Directly updates WeatherObserved and WeatherForecast entities in Orion
+  3. Sends WaterQualityObserved readings through the IoT Agent HTTP endpoint
+     (device sensor-agua-{id}, port 7896) — IoT Agent translates to NGSI-LD
+  4. Directly updates SeaConditions, WeatherObserved and WeatherForecast in Orion
 
 Intervals are configurable via .env:
   SEA_CONDITIONS_INTERVAL   = 600  (10 min)
@@ -44,10 +44,9 @@ from simulator.meteo_fetcher import (  # noqa: E402
     simulated_sea_conditions,
     simulated_water_quality,
 )
-from data.fetch_real_data import fetch_puertos_sea_state  # noqa: E402
+from data.fetch_real_data import fetch_openmeteo_sea_state  # noqa: E402
 from data.webcams import get_webcam  # noqa: E402
 from cv.detector import detect_occupancy_from_url  # noqa: E402
-# send_iot_data kept for potential future IoT Agent use
 
 logger = logging.getLogger("neptuno.simulator")
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(name)s] %(levelname)s: %(message)s")
@@ -142,7 +141,7 @@ async def update_sea_conditions(
     maritime: dict[int, dict],
 ) -> None:
     """Update SeaConditions for one beach directly in Orion-LD."""
-    sea = await fetch_puertos_sea_state(b.lat, b.lon, client)
+    sea = await fetch_openmeteo_sea_state(b.lat, b.lon, client)
     if sea is None:
         sea = simulated_sea_conditions(b.lat)
 
@@ -341,26 +340,57 @@ async def update_weather_forecast(
 
 
 async def update_water_quality(client: httpx.AsyncClient, b: BeachInfo) -> None:
-    """Update WaterQualityObserved directly in Orion-LD."""
+    """Update WaterQualityObserved via IoT Agent HTTP endpoint.
+
+    Measurements are sent through the provisioned sensor-agua-{id} device so
+    the IoT Agent translates them to NGSI-LD and writes to Orion.  dateObserved
+    and location are patched directly afterwards (not in provisioned attrs).
+    Falls back to a full direct Orion upsert if the IoT Agent is unreachable.
+    """
     wq = simulated_water_quality()
     now = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
-    entity = {
-        "id": f"urn:ngsi-ld:WaterQualityObserved:{b.id}",
-        "type": "WaterQualityObserved",
-        "dateObserved": {"type": "Property", "value": now},
-        "location": {"type": "GeoProperty", "value": {"type": "Point", "coordinates": b.coordinates}},
-        "temperature": {"type": "Property", "value": wq["temperature"], "unitCode": "CEL"},
-        "pH": {"type": "Property", "value": wq["pH"]},
-        "conductivity": {"type": "Property", "value": wq["conductivity"]},
-        "turbidity": {"type": "Property", "value": wq["turbidity"]},
-        "dissolvedOxygen": {"type": "Property", "value": wq["dissolvedOxygen"]},
-        "escherichiaColi": {"type": "Property", "value": wq["escherichiaColi"]},
-        "intestinalEnterococci": {"type": "Property", "value": wq["intestinalEnterococci"]},
-        "refPointOfInterest": {"type": "Relationship", "object": b.urn},
-        "refDevice": {"type": "Relationship", "object": b.water_sensor_urn},
-        "@context": CONTEXT_URL,
+    entity_id = f"urn:ngsi-ld:WaterQualityObserved:{b.id}"
+
+    # Send measurements through the IoT Agent (object_ids match provisioning)
+    iot_payload = {
+        "temp":   wq["temperature"],
+        "ph":     wq["pH"],
+        "cond":   wq["conductivity"],
+        "turb":   wq["turbidity"],
+        "do":     wq["dissolvedOxygen"],
+        "ecoli":  wq["escherichiaColi"],
+        "entero": wq["intestinalEnterococci"],
     }
-    await upsert_orion_entity(client, entity)
+    await send_iot_data(client, f"sensor-agua-{b.id}", iot_payload)
+
+    # Patch metadata not covered by IoT Agent provisioning
+    try:
+        patch_url = f"{ORION_URL}/ngsi-ld/v1/entities/{entity_id}/attrs"
+        meta = {
+            "dateObserved": {"type": "Property", "value": now},
+            "location": {"type": "GeoProperty", "value": {"type": "Point", "coordinates": b.coordinates}},
+            "@context": CONTEXT_URL,
+        }
+        await client.patch(patch_url, json=meta, headers=HEADERS_LD)
+    except Exception as exc:
+        logger.warning("Metadata patch failed for %s: %s — falling back to direct upsert", b.id, exc)
+        entity = {
+            "id": entity_id,
+            "type": "WaterQualityObserved",
+            "dateObserved": {"type": "Property", "value": now},
+            "location": {"type": "GeoProperty", "value": {"type": "Point", "coordinates": b.coordinates}},
+            "temperature": {"type": "Property", "value": wq["temperature"], "unitCode": "CEL"},
+            "pH": {"type": "Property", "value": wq["pH"]},
+            "conductivity": {"type": "Property", "value": wq["conductivity"]},
+            "turbidity": {"type": "Property", "value": wq["turbidity"]},
+            "dissolvedOxygen": {"type": "Property", "value": wq["dissolvedOxygen"]},
+            "escherichiaColi": {"type": "Property", "value": wq["escherichiaColi"]},
+            "intestinalEnterococci": {"type": "Property", "value": wq["intestinalEnterococci"]},
+            "refPointOfInterest": {"type": "Relationship", "object": b.urn},
+            "refDevice": {"type": "Relationship", "object": b.water_sensor_urn},
+            "@context": CONTEXT_URL,
+        }
+        await upsert_orion_entity(client, entity)
 
     # Water quality alerts
     ecoli = wq["escherichiaColi"]

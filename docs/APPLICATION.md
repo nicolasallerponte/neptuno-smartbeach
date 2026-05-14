@@ -18,6 +18,8 @@ Coastal monitoring has traditionally relied on manual measurements and periodic 
 6. **Historical Analytics** - Grafana dashboards connected to CrateDB for time-series analysis
 7. **Water Quality Prediction** - Gradient Boosting ML models predicting E. coli levels and bathing water classification
 8. **Computer Vision** - YOLOv11 ONNX person detection for beach occupancy estimation
+9. **Live Webcams** - Real-time beach camera feeds via Camaramar HLS streams (15 beaches) and Windy Webcams snapshots, proxied through the backend to avoid CORS
+10. **Tide Prediction** - Harmonic tide prediction using IHM constituents for A Coruna: current height, rising/falling trend, and next high/low water
 
 ## Detailed Features Summary
 
@@ -33,6 +35,8 @@ Coastal monitoring has traditionally relied on manual measurements and periodic 
 | Historical dashboards | Grafana 11.0.4 + CrateDB | 6 specialized panels |
 | ML prediction | scikit-learn + GradientBoosting | Historical + synthetic training data |
 | CV detection | YOLOv11 + ONNX Runtime | Beach camera images |
+| Live webcams | Camaramar HLS + Windy Webcams | Real camera streams/snapshots |
+| Tide prediction | IHM harmonic constituents | Computed (no external API) |
 | LLM assistant | Ollama + Llama 3.1:8b | Context-enriched prompts |
 | IoT simulation | IoT Agent JSON (NGSI-LD) | HTTP device measurements |
 | Data persistence | Orion-LD + QuantumLeap + CrateDB | NGSI-LD subscriptions |

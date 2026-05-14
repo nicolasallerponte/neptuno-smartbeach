@@ -1,69 +1,61 @@
 """
-Windy Webcams integration for NEPTUNO.
+Camaramar HLS webcam integration for NEPTUNO.
 
-Provides snapshot URLs and webcam metadata for beaches with camera coverage.
-Supports two source types:
-  - Windy (cam_id): imgproxy.windy.com snapshots, 640×480 or 800×450
-  - Direct URL: publicly accessible JPEG endpoints from Spanish public sources
+Provides live HLS stream URLs and snapshot images for beach cameras.
+Sources:
+  - Camaramar standard: wow.camaramar.com/camaramar/{id}.stream/
+  - Camaramar VOD:      wow.camaramar.com/VODgrabaciones/…/
+  - Windy:              imgproxy.windy.com snapshots (Riazor only, no HLS)
 
-Coverage:
-  A Coruña   — Windy cameras (Riazor: panoramic bay, Orzán: beach level)
-  Ares area  — CAA Mouço (Ría de Ares, updates every 10 min)
-  Razo       — PlayaWebcams direct JPEG
-  Costa Morte— G24/CRTVG public broadcaster (Fisterra camera)
-  Ares/Ferrol— Windy Ares camera
+Camaramar streams expose Access-Control-Allow-Origin: * so HLS.js can
+load them directly from the browser without a backend proxy.
 """
 
 from __future__ import annotations
 
-import os
+_CAM_BASE = "https://wow.camaramar.com/camaramar"
+_CAM_PLAYER = "https://www.camaramar.com"
 
-WINDY_API_KEY = os.getenv("WINDY_API_KEY", "")
-
-# Mapping beach_id → webcam source.
-# "cam_id" → Windy imgproxy snapshot (requires cam_id known from API)
-# "url"    → direct public JPEG endpoint (no authentication)
+# beach_id → webcam source descriptor.
+#   hls_id  : Camaramar standard stream (ID_slug), path under _CAM_BASE
+#   hls_url : full custom HLS URL (VOD or non-standard path)
+#   cam_id  : Windy camera ID (JPEG snapshot only, no live video)
 WEBCAM_MAP: dict[str, dict] = {
-    # --- Windy cameras A Coruña ---
-    # cam 1280757387: panoramic bay/harbor view from above → Riazor overview
-    # cam 1668786166: beach-level view, shows actual sand and water → Orzán
+    # --- A Coruña city — Windy panoramic only (no Camaramar stream) ---
     "Riazor": {"cam_id": 1280757387, "title": "A Coruña · Bahía"},
-    "Orzan":  {"cam_id": 1668786166, "title": "Playa de Orzán"},
 
-    # --- Windy camera Ares area ---
-    "Doninos": {"cam_id": 1683292037, "title": "Ares · Ría de Ares"},
+    # --- A Coruña city area — Camaramar ---
+    "Orzan":          {"hls_id": "62_matadero",       "title": "Playa del Matadero"},
 
-    # --- G24/CRTVG — Televisión de Galicia, JPEG público sin autenticación ---
-    # fisterra.jpg cubre el litoral de la Costa da Morte (Cabo Fisterra)
-    "Laxe":    {
-        "url": "https://www.g24.gal/prog24/ARQUIVO/CAMARAS_WEB/fisterra.jpg",
-        "title": "Costa da Morte · CRTVG",
-        "player_url": "https://www.g24.gal",
-    },
-    "Carnota": {
-        "url": "https://www.g24.gal/prog24/ARQUIVO/CAMARAS_WEB/fisterra.jpg",
-        "title": "Costa da Morte · CRTVG",
-        "player_url": "https://www.g24.gal",
-    },
+    # --- Oleiros (east ría) ---
+    "SantaCristina":  {"hls_id": "51_santacristina",  "title": "Santa Cristina"},
+    "Bastiagueiro":   {"hls_id": "17_bastiagueiro",   "title": "Bastiagueiro"},
 
-    # --- PlayaWebcams — JPEG directo para Razo ---
-    "Razo": {
-        "url": "https://www.playawebcams.com/andy/tiempo-razo-coruna.jpg",
-        "title": "Razo · PlayaWebcams",
-        "player_url": "https://www.playawebcams.com",
-    },
+    # --- Ría de Betanzos / north ---
+    "Mino":           {"hls_id": "61_perbes",          "title": "Perbes · cerca de Miño"},
+    "Cabanas":        {"hls_id": "54_cabana",          "title": "A Cabana · Sada"},
 
-    # --- CAA Mouço — asociación náutica Ares, actualiza cada 10 min ---
-    "Mino": {
-        "url": "https://www.caamouco.net/webcam2/Video1000M.jpg",
-        "title": "Ría de Ares · Caamouco",
-        "player_url": "https://www.caamouco.net/portal2/webcam",
+    # --- Ferrol area ---
+    "Doninos":        {"hls_id": "11_doninos",         "title": "Doniños"},
+
+    # --- Northern coast ---
+    "Valdovino":      {"hls_id": "8_valdovino",        "title": "Valdoviño"},
+    "Pantin":         {"hls_id": "20_pantin",          "title": "Pantín"},
+
+    # --- Arteixo / Costa da Morte north ---
+    "Sabon": {
+        "hls_url":      "https://wow.camaramar.com/VODgrabaciones/meteo_Langosteira.mp4/playlist.m3u8",
+        "snapshot_url": "https://wow.camaramar.com/VODgrabaciones/meteo_Langosteira.mp4/snapshot.jpg",
+        "title": "Langosteira · Sabón",
     },
-    "Cabanas": {
-        "url": "https://www.caamouco.net/webcam2/Video1000M.jpg",
-        "title": "Ría de Ares · Caamouco",
-        "player_url": "https://www.caamouco.net/portal2/webcam",
-    },
+    "Caion":    {"hls_id": "44_caionsurfhouse", "title": "Caión Surf House"},
+    "Baldaio":  {"hls_id": "49_baldaio",        "title": "Baldaio"},
+    "Razo":     {"hls_id": "5_razo",            "title": "Razo"},
+    "Malpica":  {"hls_id": "12_malpica",        "title": "Malpica"},
+
+    # --- Costa da Morte south ---
+    "Carnota":  {"hls_id": "33_carnota",        "title": "Carnota"},
+    # Laxe, Larino, Barona — no Camaramar stream available
 }
 
 
@@ -74,22 +66,37 @@ def get_webcam(beach_id: str) -> dict | None:
         return None
 
     if "cam_id" in cam:
+        # Windy — JPEG snapshot only, no HLS
         snap_url = f"https://imgproxy.windy.com/_/full/plain/current/{cam['cam_id']}/original.jpg"
         player_url = f"https://windy.com/webcams/{cam['cam_id']}"
-        provider = "Windy"
-    else:
-        snap_url = cam["url"]
-        player_url = cam.get("player_url", snap_url)
-        # Extract domain as provider label
-        try:
-            provider = player_url.split("/")[2].replace("www.", "")
-        except IndexError:
-            provider = "Direct"
+        return {
+            "available": True,
+            "title": cam["title"],
+            "hls_url": None,
+            "snapshot_url": snap_url,
+            "player_url": player_url,
+            "provider": "Windy",
+        }
 
+    if "hls_id" in cam:
+        # Camaramar standard stream
+        hls_id = cam["hls_id"]
+        base = f"{_CAM_BASE}/{hls_id}.stream"
+        return {
+            "available": True,
+            "title": cam["title"],
+            "hls_url": f"{base}/playlist.m3u8",
+            "snapshot_url": f"{base}/snapshot.jpg",
+            "player_url": _CAM_PLAYER,
+            "provider": "Camaramar",
+        }
+
+    # Camaramar VOD or custom URL
     return {
         "available": True,
         "title": cam["title"],
-        "snapshot_url": snap_url,
-        "player_url": player_url,
-        "provider": provider,
+        "hls_url": cam.get("hls_url"),
+        "snapshot_url": cam.get("snapshot_url"),
+        "player_url": cam.get("player_url", _CAM_PLAYER),
+        "provider": "Camaramar",
     }

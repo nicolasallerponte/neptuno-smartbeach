@@ -4,7 +4,7 @@ Real data fetcher from multiple Galician public data sources.
 Sources:
   - MeteoGalicia API v4  (weather observations and forecasts)
   - INTECMAR              (water quality for bathing zones)
-  - Puertos del Estado    (buoy sea-state data)
+  - Open-Meteo Marine     (wave height, period, direction — free, no key)
   - Xunta Open Data       (static beach catalogue enrichment)
 
 Every function returns parsed data or None, allowing the simulator to
@@ -61,61 +61,52 @@ async def fetch_intecmar_water_quality(
 
 
 # ---------------------------------------------------------------------------
-# Puertos del Estado -- buoy data
+# Open-Meteo Marine -- wave data (free, no API key required)
 # ---------------------------------------------------------------------------
 
-PUERTOS_URL = "https://portus.puertos.es/Portal/portal/portal_api.php"
+_OPENMETEO_MARINE_URL = "https://marine-api.open-meteo.com/v1/marine"
 
 
-async def fetch_puertos_sea_state(
+async def fetch_openmeteo_sea_state(
     lat: float,
     lon: float,
     client: httpx.AsyncClient | None = None,
 ) -> dict[str, Any] | None:
-    """Try to fetch real buoy data from Puertos del Estado.
+    """Fetch real wave data from Open-Meteo Marine API.
 
-    The Puertos del Estado PORTUS API provides wave height, period, and
-    sea surface temperature from oceanographic buoys along the coast.
+    Returns current wave height, period, direction and swell for the
+    given coordinates. Updates every 15 minutes, no authentication needed.
     """
     try:
         http = client or httpx.AsyncClient(timeout=TIMEOUT)
         params = {
-            "accion": "getDatosBoya",
-            "lat": str(lat),
-            "lon": str(lon),
-            "radio": "50",
+            "latitude": lat,
+            "longitude": lon,
+            "current": "wave_height,wave_period,wave_direction,swell_wave_height,swell_wave_period",
+            "timezone": "Europe/Madrid",
         }
-        resp = await http.get(PUERTOS_URL, params=params)
+        resp = await http.get(_OPENMETEO_MARINE_URL, params=params)
         resp.raise_for_status()
         data = resp.json()
         if not client:
             await http.aclose()
 
-        result = _parse_puertos_data(data)
-        if result:
-            logger.info("REAL sea state from Puertos del Estado (%.4f, %.4f)", lat, lon)
-            return result
+        cur = data.get("current", {})
+        wave_h = cur.get("wave_height")
+        wave_p = cur.get("wave_period")
+        if wave_h is None or wave_p is None:
+            return None
+
+        logger.info("REAL sea state from Open-Meteo Marine (%.4f, %.4f): %.2fm", lat, lon, wave_h)
+        return {
+            "waveHeight": round(float(wave_h), 2),
+            "wavePeriod": round(float(wave_p), 1),
+            "waveDirection": int(cur.get("wave_direction", 270)),
+            "swellHeight": round(float(cur.get("swell_wave_height", 0) or 0), 2),
+            "swellPeriod": round(float(cur.get("swell_wave_period", 0) or 0), 1),
+        }
     except Exception as exc:
-        logger.warning("Puertos del Estado unavailable: %s", exc)
-    return None
-
-
-def _parse_puertos_data(data: Any) -> dict[str, Any] | None:
-    """Parse Puertos del Estado API response for wave data."""
-    try:
-        if isinstance(data, dict):
-            records = data.get("datos", data.get("data", []))
-            if isinstance(records, list) and records:
-                latest = records[-1]
-                return {
-                    "waveHeight": round(float(latest.get("Hm0", latest.get("waveHeight", 0))), 2),
-                    "wavePeriod": round(float(latest.get("Tp", latest.get("wavePeriod", 0))), 1),
-                    "seaSurfaceTemperature": round(
-                        float(latest.get("SST", latest.get("seaSurfaceTemperature", 15.0))), 1
-                    ),
-                }
-    except (KeyError, TypeError, ValueError) as exc:
-        logger.debug("Failed to parse Puertos del Estado data: %s", exc)
+        logger.warning("Open-Meteo Marine unavailable: %s", exc)
     return None
 
 
@@ -170,7 +161,7 @@ async def fetch_all_real_data(
     async with httpx.AsyncClient(timeout=TIMEOUT) as client:
         observation = await fetch_observation(station_id, client)
         forecast = await fetch_forecast(lat, lon, client)
-        sea_state = await fetch_puertos_sea_state(lat, lon, client)
+        sea_state = await fetch_openmeteo_sea_state(lat, lon, client)
         water_quality = await fetch_intecmar_water_quality(beach_name, client)
 
     return {

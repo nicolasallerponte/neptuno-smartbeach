@@ -5,7 +5,7 @@
 **Product Name:** NEPTUNO - Smart Coastal Intelligence Platform
 **Version:** 1.0.0
 **Target Users:** Beachgoers, surfers, tourists, local authorities, environmental managers
-**Scope:** 12 beaches in the province of A Coruna, Galicia, Spain
+**Scope:** 18 beaches in the province of A Coruna, Galicia, Spain
 
 ## 2. Problem Statement
 
@@ -46,7 +46,7 @@ Beachgoers and coastal authorities lack a unified platform to access real-time b
 
 ### FR-5: Globe Visualization
 - **FR-5.1:** Display 3D globe using Three.js r128 centered on A Coruna
-- **FR-5.2:** Place 12 beach markers colored by current status (green/yellow/red)
+- **FR-5.2:** Place 18 beach markers colored by current status (green/yellow/red)
 - **FR-5.3:** Support mouse drag rotation and scroll zoom
 - **FR-5.4:** Navigate to beach detail view on marker click
 
@@ -79,6 +79,18 @@ Beachgoers and coastal authorities lack a unified platform to access real-time b
 ### FR-10: Grafana Dashboards
 - **FR-10.1:** Auto-provision CrateDB datasource via PostgreSQL wire protocol
 - **FR-10.2:** Display 6 dashboard panels: sea temp, wave height, water quality state, occupation gauge, alerts geomap, pH/E.coli history
+
+### FR-11: Live Beach Webcams
+- **FR-11.1:** Integrate Camaramar HLS live streams for beaches with available cameras (15 of 18)
+- **FR-11.2:** Integrate Windy Webcams JPEG snapshots as fallback for beaches without Camaramar
+- **FR-11.3:** Proxy all webcam snapshot images through the backend to avoid browser CORS restrictions
+- **FR-11.4:** Auto-refresh snapshot images every 5 minutes in the beach detail view
+- **FR-11.5:** Return `{"available": false}` for beaches with no camera
+
+### FR-12: Harmonic Tide Prediction
+- **FR-12.1:** Predict tide height using harmonic constituents published by IHM (Instituto Hidrografico de la Marina) for the A Coruna reference port
+- **FR-12.2:** Return current height (m), rising/falling trend, and next high/low water time and height
+- **FR-12.3:** Display tide state card in beach detail view alongside meteo/sea condition cards
 
 ## 5. Non-Functional Requirements
 

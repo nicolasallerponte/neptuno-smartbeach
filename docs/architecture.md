@@ -48,6 +48,9 @@ NEPTUNO follows a microservices architecture orchestrated via Docker Compose, wi
 |  | - GET /api/beaches/{id}    (detail with all sub-entities)     |  |
 |  | - GET /api/beaches/{id}/history  (QuantumLeap time series)    |  |
 |  | - GET /api/beaches/{id}/predict  (ML predictions from Orion)  |  |
+|  | - GET /api/beaches/{id}/webcam   (Camaramar/Windy cam info)   |  |
+|  | - GET /api/beaches/{id}/webcam/snapshot (CORS proxy image)    |  |
+|  | - GET /api/beaches/{id}/tide     (harmonic tide prediction)   |  |
 |  | - GET /api/alerts          (active WeatherAlert entities)     |  |
 |  | - POST /api/chat           (Ollama LLM with Orion context)    |  |
 |  | - Static file server for frontend/                            |  |
@@ -133,6 +136,8 @@ NEPTUNO follows a microservices architecture orchestrated via Docker Compose, wi
 | Backfill | Python (async) | - | One-shot 7-day historical data load direct to CrateDB |
 | ML Pipeline | scikit-learn, XGBoost | - | Water quality prediction |
 | CV Pipeline | ONNX Runtime + YOLOv11 | - | Beach occupancy detection |
+| Webcam Service | data/webcams.py | - | Camaramar HLS + Windy snapshot URLs; CORS proxy |
+| Tide Service | services/tides.py | - | Harmonic prediction via IHM A Coruna constituents |
 | Ollama | Llama 3.1:8b | 11434 | LLM for chat assistant |
 
 ## Data Flow Pipelines
@@ -155,13 +160,30 @@ QuantumLeap (:8668)
 CrateDB (mtsmartbeach.etseaconditions)
 ```
 
-Note: IoT Agent is provisioned with device definitions but the current
-data flow bypasses it, writing directly to Orion for all entity types.
+### Pipeline 1b: Water Quality (IoT Agent Path)
+
+```
+Simulator (update_water_quality, every 12h)
+    |
+    | POST :7896/iot/json?k=neptuno-smartbeach-2026&i=sensor-agua-{id}
+    | Payload: {temp, ph, cond, turb, do, ecoli, entero}
+    v
+IoT Agent JSON (:7896)
+    |
+    | Translates to NGSI-LD, PATCH :1026/ngsi-ld/v1/entities/
+    | urn:ngsi-ld:WaterQualityObserved:{id}/attrs
+    v
+Orion-LD (:1026)
+    |
+    | Subscription notification
+    v
+QuantumLeap -> CrateDB (mtsmartbeach.etwaterqualityobserved)
+```
 
 ### Pipeline 2: Weather Data (Direct Orion Path)
 
 ```
-MeteoGalicia API v4
+MeteoGalicia API v5/mgrss (MeteoSIX)
     |
     | HTTP GET (observation/forecast)
     v
@@ -237,7 +259,47 @@ FastAPI -> JSON response -> Frontend
 User visualization
 ```
 
-### Pipeline 5: LLM Chat
+### Pipeline 5: Live Webcam
+
+```
+User Browser (beach detail view)
+    |
+    | GET /api/beaches/{id}/webcam
+    v
+FastAPI Backend
+    |
+    | data/webcams.py lookup (WEBCAM_MAP)
+    | Returns: hls_url (Camaramar playlist.m3u8) or snapshot_url (Windy JPEG)
+    v
+Browser
+    |
+    | If HLS available: HLS.js loads stream from Camaramar directly (CORS *)
+    | If snapshot only: GET /api/beaches/{id}/webcam/snapshot (CORS proxy)
+    |                   Backend fetches from Windy/Camaramar, relays to browser
+    v
+Webcam panel in beach detail view (auto-refresh every 5 min)
+```
+
+### Pipeline 5b: Tide Prediction
+
+```
+User Browser (beach detail view)
+    |
+    | GET /api/beaches/{id}/tide
+    v
+FastAPI Backend
+    |
+    | services/tides.py: harmonic prediction
+    |   - 11 IHM tidal constituents for A Coruna reference port
+    |   - Computes height (m), trend (rising/falling), next extreme
+    |   (no external API call, pure calculation)
+    v
+JSON response: {height, trend, trend_es, trend_arrow, next_extreme, phase_pct}
+    v
+Tide card in beach detail view
+```
+
+### Pipeline 6: LLM Chat
 
 ```
 User types message in chat UI

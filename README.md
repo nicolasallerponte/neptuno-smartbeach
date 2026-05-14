@@ -98,5 +98,7 @@ uv run python ml/predict.py  # genera entidades WaterQualityPredicted en Orion
 - **Backend:** FastAPI + Python 3.11, httpx, uv
 - **Frontend:** SPA vanilla JS — Three.js r128, Leaflet.js 1.9.4, Chart.js 4.4.1
 - **IA:** Ollama + Llama 3.1:8b (local), scikit-learn GradientBoosting, YOLOv11 ONNX
+- **Webcams:** Camaramar (HLS en vivo, 14 playas) + Windy Webcams (snapshot, 1 playa)
+- **Mareas:** prediccion armonica con constituyentes IHM para A Coruna (sin API externa)
 - **Datos externos:** MeteoGalicia v5/mgrss (MeteoSIX), Puertos del Estado, INTECMAR
 - **Infraestructura:** Docker Compose, CrateDB, MongoDB, Grafana

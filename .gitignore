@@ -14,3 +14,6 @@ build/
 ml/models/
 .DS_Store
 node_modules/
+.claude/
+*.txt
+!requirements.txt

@@ -154,9 +154,15 @@
                     <div class="condition-value" id="val-bath">--</div>
                     <div class="condition-unit">★ / 5</div>
                 </div>
+                <div class="condition-card" id="card-tide" role="listitem">
+                    <div class="condition-label">Marea</div>
+                    <div class="condition-value" id="val-tide">--</div>
+                    <div class="condition-unit">m &nbsp;<span id="val-tide-arrow" style="font-size:1em;"></span></div>
+                </div>
             </div>
 
             <div class="maritime-info" id="maritime-info" style="display:none;">
+                <div class="maritime-row" id="row-tide-next"></div>
                 <div class="maritime-row" id="row-sea-state"></div>
                 <div class="maritime-row" id="row-swell"></div>
                 <div class="maritime-row" id="row-wave-range"></div>
@@ -183,21 +189,6 @@
                     <div class="fc-cell-label">UV máximo</div>
                     <div class="fc-cell-value" id="fc-uv">--</div>
                     <div class="fc-cell-unit">índice</div>
-                </div>
-            </div>
-
-            <div id="webcam-panel" class="webcam-panel" style="display:none;">
-                <div class="panel-header">
-                    <h3>Cámara en vivo</h3>
-                    <div class="panel-actions">
-                        <span class="panel-badge" id="webcam-title"></span>
-                        <a id="webcam-windy-link" class="gmaps-btn" target="_blank" rel="noopener noreferrer" href="#">Ver en Windy</a>
-                    </div>
-                </div>
-                <div class="webcam-frame">
-                    <img id="webcam-img" src="" alt="Cámara de playa" class="webcam-img" />
-                    <span class="webcam-live-badge">EN VIVO</span>
-                    <button class="webcam-refresh-btn" id="webcam-refresh" aria-label="Actualizar imagen">↻ Actualizar</button>
                 </div>
             </div>
 
@@ -244,6 +235,22 @@
                         </div>
                         <canvas id="chart-occupation" aria-label="Grafica prediccion de ocupacion"></canvas>
                     </div>
+                </div>
+            </div>
+
+            <div id="webcam-panel" class="webcam-panel" style="display:none;">
+                <div class="panel-header">
+                    <h3>Cámara en vivo</h3>
+                    <div class="panel-actions">
+                        <span class="panel-badge" id="webcam-title"></span>
+                        <a id="webcam-windy-link" class="gmaps-btn" target="_blank" rel="noopener noreferrer" href="#">Ver en directo</a>
+                    </div>
+                </div>
+                <div class="webcam-frame">
+                    <video id="webcam-video" class="webcam-video" autoplay muted playsinline style="display:none;"></video>
+                    <img id="webcam-img" src="" alt="Cámara de playa" class="webcam-img" style="display:none;" />
+                    <span class="webcam-live-badge">EN VIVO</span>
+                    <button class="webcam-refresh-btn" id="webcam-refresh" aria-label="Actualizar">↻ Actualizar</button>
                 </div>
             </div>
         </section>
@@ -317,6 +324,7 @@
 
     <div id="toast-container" aria-live="assertive" aria-atomic="true"></div>
 
+    <script src="https://cdn.jsdelivr.net/npm/hls.js@1.5.13/dist/hls.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>

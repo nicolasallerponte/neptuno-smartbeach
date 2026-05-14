@@ -184,18 +184,54 @@ def classify_occupation(count: int) -> str:
     return "veryHigh"
 
 
+def _season_factor(month: int) -> float:
+    """Beach occupation multiplier by month (0=empty, 1=peak)."""
+    factors = {1: 0.03, 2: 0.03, 3: 0.05, 4: 0.10, 5: 0.18,
+               6: 0.40, 7: 0.85, 8: 1.00, 9: 0.55, 10: 0.15,
+               11: 0.04, 12: 0.03}
+    return factors.get(month, 0.1)
+
+
+def _hour_factor(hour: int) -> float:
+    """Beach occupation multiplier by hour of day (local solar time)."""
+    if hour < 9:
+        return 0.0
+    elif hour < 11:
+        return 0.25
+    elif hour < 14:
+        return 0.75
+    elif hour < 18:
+        return 1.00
+    elif hour < 20:
+        return 0.45
+    return 0.05
+
+
+def _simulated_person_count() -> int:
+    """Return a season- and time-of-day-aware simulated person count."""
+    import random
+    from datetime import datetime, timezone
+
+    now = datetime.now(timezone.utc)
+    # Approximate local hour (Galicia = UTC+1 winter / UTC+2 summer)
+    local_hour = (now.hour + 1 + (1 if now.month in range(4, 11) else 0)) % 24
+    sf = _season_factor(now.month)
+    hf = _hour_factor(local_hour)
+    expected = 60 * sf * hf
+    noise = random.uniform(0.6, 1.4)
+    return max(0, int(expected * noise))
+
+
 def detect_occupancy(image_path: str | Path | None = None) -> OccupancyResult:
     """Detect beach occupancy from an image.
 
     If no ONNX model is available or no image is provided, returns
-    a simulated result.
+    a season- and time-aware simulated result.
     """
     session = load_onnx_session()
 
     if session is None or image_path is None:
-        import random
-
-        count = random.randint(0, 60)
+        count = _simulated_person_count()
         logger.info("SIMULATED occupancy detection: %d people", count)
         return OccupancyResult(
             person_count=count,
