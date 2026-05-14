@@ -141,9 +141,10 @@ async def update_sea_conditions(
     maritime: dict[int, dict],
 ) -> None:
     """Update SeaConditions for one beach directly in Orion-LD."""
-    sea = await fetch_openmeteo_sea_state(b.lat, b.lon, client)
-    if sea is None:
-        sea = simulated_sea_conditions(b.lat)
+    sea_real = await fetch_openmeteo_sea_state(b.lat, b.lon, client)
+    sea = simulated_sea_conditions(b.lat)
+    if sea_real is not None:
+        sea.update(sea_real)
 
     zone_id = MARITIME_ZONE_MAP.get(b.id)
     zone_data = maritime.get(zone_id, {}) if zone_id else {}
